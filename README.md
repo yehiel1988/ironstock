@@ -1,1 +1,956 @@
-# ironstock
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>CLAUDE CAPITAL</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --gold:#c9a84c;--gold-d:rgba(201,168,76,.15);--gold-b:rgba(201,168,76,.28);
+  --green:#00d4a0;--red:#ff4d6d;--amber:#f59e0b;--cyan:#22d3ee;--blue:#4d9fff;
+  --bg:#040810;--surface:#080f1e;--card:#09121f;--card2:#0d1a2e;
+  --border:rgba(255,255,255,.055);--border2:rgba(255,255,255,.1);
+  --text:#e8eaf0;--muted:#4a5a78;--dim:#1e2d45;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100%;background:var(--bg);color:var(--text);font-family:'Space Grotesk',sans-serif}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-thumb{background:var(--dim)}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.2}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@keyframes flashGreen{0%,100%{background:transparent}40%{background:rgba(0,212,160,.12)}}
+@keyframes flashRed{0%,100%{background:transparent}40%{background:rgba(255,77,109,.1)}}
+@keyframes slideLeft{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
+
+.sk{background:linear-gradient(90deg,#0d1a2e 25%,#152030 50%,#0d1a2e 75%);background-size:200% 100%;animation:shimmer 1.8s infinite;border-radius:6px}
+
+/* ── App shell ── */
+.app{min-height:100vh;position:relative;overflow-x:hidden}
+.app::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse 70% 40% at 15% -5%,rgba(201,168,76,.055) 0%,transparent 55%),
+    radial-gradient(ellipse 50% 50% at 85% 105%,rgba(0,212,160,.035) 0%,transparent 55%),
+    repeating-linear-gradient(0deg,transparent,transparent 59px,rgba(255,255,255,.007) 60px);
+}
+
+/* ── Header ── */
+header{position:sticky;top:0;z-index:100;background:rgba(4,8,16,.94);border-bottom:1px solid var(--gold-b);backdrop-filter:blur(20px)}
+.hdr{max-width:1280px;margin:0 auto;padding:0 24px;height:56px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.logo{display:flex;align-items:center;gap:12px}
+.logo-mark{width:34px;height:34px;border-radius:8px;background:linear-gradient(135deg,var(--gold),#8a6420);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:700;color:#040810;font-family:'JetBrains Mono',monospace;box-shadow:0 0 14px rgba(201,168,76,.25)}
+.logo-name{font-size:14px;font-weight:700;letter-spacing:.08em;color:var(--gold)}
+.logo-sub{font-size:9px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase}
+.hright{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.spill{display:flex;align-items:center;gap:6px;padding:4px 11px;border-radius:99px;border:1px solid var(--border2);background:rgba(255,255,255,.03);font-size:11px;font-family:'JetBrains Mono',monospace;transition:border-color .3s}
+.sdot{width:6px;height:6px;border-radius:50%;flex-shrink:0;transition:background .5s}
+.hbtn{padding:4px 11px;border-radius:7px;border:1px solid var(--border2);background:rgba(255,255,255,.03);color:var(--muted);cursor:pointer;font-size:11px;font-family:'JetBrains Mono',monospace;transition:all .2s}
+.hbtn:hover{color:var(--text);background:rgba(255,255,255,.07)}
+.kpanel{border-top:1px solid var(--gold-b);background:rgba(4,8,16,.95);padding:8px 24px;display:none;align-items:center;gap:10px;flex-wrap:wrap}
+.kinput{flex:1;min-width:200px;background:var(--surface);border:1px solid var(--dim);border-radius:7px;padding:6px 12px;font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--text);outline:none;transition:border-color .2s}
+.kinput:focus{border-color:var(--gold)}
+
+/* ── CORS banner ── */
+#cors-banner{display:none;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.25);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:11px;color:#fcd34d;line-height:1.8;direction:rtl;animation:fadeUp .3s ease}
+
+/* ── Main ── */
+main{max-width:1280px;margin:0 auto;padding:22px 24px 88px;position:relative;z-index:1}
+
+/* ── Summary ── */
+.sgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:10px;margin-bottom:22px}
+.scard{background:var(--card);border:1px solid var(--border);border-radius:13px;padding:13px 15px;display:flex;flex-direction:column;gap:5px}
+.slabel{font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase}
+.sval{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;font-family:'JetBrains Mono',monospace}
+
+/* ── Tabs ── */
+.tabs{display:flex;gap:5px;margin-bottom:18px}
+.tab{padding:8px 20px;border-radius:10px;font-size:12px;font-weight:600;letter-spacing:.04em;border:1px solid var(--border);cursor:pointer;transition:all .2s;background:var(--card);color:var(--muted)}
+.tab:hover{color:var(--text)}
+.tab.act{background:rgba(124,58,237,.14);border-color:rgba(124,58,237,.38);color:#c4b5fd}
+.tab.iro{background:rgba(6,182,212,.09);border-color:rgba(6,182,212,.3);color:var(--cyan)}
+
+/* ── Iron banner ── */
+.iron-banner{background:linear-gradient(135deg,rgba(6,182,212,.05),transparent);border:1px solid rgba(6,182,212,.18);border-radius:14px;padding:14px 18px;margin-bottom:18px;display:none;gap:14px;align-items:flex-start;flex-wrap:wrap}
+
+/* ── Price grid — updated in-place ── */
+.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:11px;margin-bottom:11px}
+.ptile{
+  background:var(--card);border:1.5px solid var(--border);border-radius:15px;
+  padding:15px;position:relative;cursor:pointer;transition:border-color .25s,transform .2s;
+  overflow:hidden;
+}
+.ptile::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.08),transparent)}
+.ptile:hover{border-color:var(--border2);transform:translateY(-1px)}
+.ptile.sel{transform:translateY(-2px)}
+/* Flash on price update */
+.ptile.flash-up{animation:flashGreen .9s ease}
+.ptile.flash-dn{animation:flashRed .9s ease}
+
+.ptile-ring{position:absolute;top:10px;right:10px;width:7px;height:7px;border-radius:50%}
+.ptile-sym{font-size:11px;font-weight:700;letter-spacing:.1em;margin-bottom:3px;direction:ltr;text-align:left}
+.ptile-price{font-size:23px;font-weight:700;color:var(--text);font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;direction:ltr;text-align:left;transition:color .4s}
+.ptile-chg{font-size:12px;font-weight:600;font-family:'JetBrains Mono',monospace;margin-top:3px;direction:ltr;text-align:left}
+.ptile-hl{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);font-family:'JetBrains Mono',monospace;margin-top:7px;padding-top:7px;border-top:1px solid var(--border)}
+
+/* ── Detail panel ── */
+.dpanel{background:var(--card);border-radius:13px;padding:14px 18px;margin-bottom:18px;animation:fadeUp .25s ease}
+.dp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:11px;margin-bottom:11px}
+.dp-lbl{font-size:9px;color:var(--muted);letter-spacing:.09em;text-transform:uppercase;margin-bottom:3px}
+.dp-val{font-size:13px;font-weight:600;font-family:'JetBrains Mono',monospace}
+.dp-insight{padding:9px 13px;background:rgba(255,255,255,.03);border-radius:9px;font-size:12px;color:#8899b0;line-height:1.7}
+
+/* ── Analysis header ── */
+.ahdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px}
+.mbtn{
+  display:flex;align-items:center;gap:9px;
+  padding:11px 26px;border-radius:12px;font-size:13px;font-weight:700;letter-spacing:.05em;
+  border:none;cursor:pointer;transition:all .25s;color:#040810;
+  background:linear-gradient(135deg,var(--gold),#8a6420);
+  box-shadow:0 4px 18px rgba(201,168,76,.28);
+  font-family:'Space Grotesk',sans-serif;
+}
+.mbtn:hover:not(:disabled){box-shadow:0 6px 28px rgba(201,168,76,.48);transform:translateY(-1px)}
+.mbtn:disabled{opacity:.42;cursor:not-allowed;transform:none;box-shadow:none}
+.spinner{width:13px;height:13px;border:2px solid rgba(4,8,16,.25);border-top-color:#040810;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+.sectitle{font-size:10px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase}
+
+/* ── Empty ── */
+.empty{text-align:center;padding:65px 20px;border:1px dashed var(--dim);border-radius:15px;color:var(--dim);font-size:13px}
+
+/* ── Analysis grid ── */
+.agrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:15px}
+
+/* ── Decision card ── */
+.dcard{
+  background:var(--card);border-radius:17px;padding:19px;
+  animation:fadeUp .4s ease;border:1px solid var(--border);
+  position:relative;overflow:hidden;transition:border-color .3s;
+}
+.dcard::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,var(--gold-b),transparent)}
+.dcard:hover{border-color:var(--border2)}
+.dc-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:13px}
+.dc-tg{display:flex;align-items:center;gap:7px}
+.dc-ticker{font-size:17px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.dc-pill{font-size:10px;padding:2px 7px;border-radius:99px;font-weight:600;letter-spacing:.05em}
+.dc-dec{padding:4px 14px;border-radius:8px;font-size:12px;font-weight:800;letter-spacing:.06em;font-family:'JetBrains Mono',monospace}
+.conf-wrap{position:relative;width:54px;height:54px;flex-shrink:0}
+.conf-pct{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.srow{display:flex;align-items:center;gap:8px;font-size:11px}
+.strack{flex:1;height:3px;background:var(--dim);border-radius:99px;overflow:hidden}
+.sfill{height:100%;border-radius:99px;transition:width 1.4s cubic-bezier(.4,0,.2,1)}
+.snm{width:15px;font-weight:700;font-size:10px;text-align:center;font-family:'JetBrains Mono',monospace}
+.snote{color:#8899b0;font-size:12px;line-height:1.75;padding:9px 13px;background:rgba(255,255,255,.025);border-radius:9px;margin-bottom:13px;border-right:2px solid}
+
+/* ── Oracle section ── */
+.oracle-toggle{
+  width:100%;display:flex;align-items:center;gap:8px;cursor:pointer;
+  padding:8px 12px;border-radius:9px;
+  background:var(--gold-d);border:1px solid var(--gold-b);
+  transition:all .2s;margin-bottom:0;
+  font-family:'Space Grotesk',sans-serif;
+}
+.oracle-toggle:hover{background:rgba(201,168,76,.22)}
+.otlabel{font-size:12px;font-weight:700;color:var(--gold);flex:1}
+.otarr{font-size:11px;color:rgba(201,168,76,.6);transition:transform .25s}
+.oracle-body{
+  display:none;margin-top:9px;
+  background:rgba(201,168,76,.035);border:1px solid var(--gold-b);
+  border-radius:11px;padding:13px 15px;animation:fadeUp .25s ease;
+}
+.claude-verdict{display:flex;gap:11px;align-items:flex-start;margin-bottom:11px;padding-bottom:11px;border-bottom:1px solid var(--border)}
+.claude-badge{width:38px;height:38px;border-radius:9px;flex-shrink:0;background:linear-gradient(135deg,var(--gold),#8a6420);display:flex;align-items:center;justify-content:center;font-size:17px;box-shadow:0 0 10px rgba(201,168,76,.2)}
+.cname{font-size:9px;color:var(--gold);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px}
+.cquote{font-size:11px;color:var(--text);line-height:1.7;font-style:italic}
+.cedge{font-size:11px;color:var(--gold);margin-top:6px;line-height:1.5}
+.ctab{width:100%;border-collapse:collapse;font-size:11px;margin-top:9px}
+.ctab th{color:var(--muted);padding:3px 5px;text-align:right;font-weight:500;font-size:9px;letter-spacing:.07em;text-transform:uppercase}
+.ctab td{padding:5px 5px;border-top:1px solid var(--border);line-height:1.5}
+.ctab tr:first-child td{border-top:none}
+.stance{display:inline-block;padding:1px 6px;border-radius:99px;font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace}
+
+/* ── Entry details ── */
+.ebtn{color:var(--muted);background:none;border:none;cursor:pointer;font-size:11px;font-family:'JetBrains Mono',monospace;padding:0;transition:color .2s;margin-top:11px;display:block}
+.ebtn:hover{color:var(--text)}
+.edetail{display:none;margin-top:9px;flex-direction:column;gap:5px}
+.erow{display:flex;justify-content:space-between;padding:5px 9px;border-radius:7px;font-size:11px;font-family:'JetBrains Mono',monospace}
+
+/* ── Alerts ── */
+.aw{position:fixed;bottom:58px;left:18px;z-index:200;display:flex;flex-direction:column;gap:5px;width:295px}
+.alert{padding:8px 13px;border-radius:9px;font-size:11px;font-family:'JetBrains Mono',monospace;backdrop-filter:blur(12px);animation:slideLeft .3s ease;box-shadow:0 6px 24px rgba(0,0,0,.5);border:1px solid}
+
+/* ── Debug ── */
+#dbg{background:#050d1a;border:1px solid #1a3050;border-radius:9px;padding:11px;margin-bottom:14px;direction:ltr;display:none}
+#dlog{color:var(--muted);line-height:1.8;max-height:80px;overflow-y:auto;font-size:10px;font-family:'JetBrains Mono',monospace}
+#dlog .ok{color:var(--green)}#dlog .err{color:var(--red)}#dlog .warn{color:var(--amber)}#dlog .info{color:var(--blue)}
+
+footer{position:fixed;bottom:0;left:0;right:0;background:rgba(4,8,16,.94);border-top:1px solid var(--border);padding:7px 24px;text-align:center;font-size:10px;color:var(--dim);font-family:'JetBrains Mono',monospace;backdrop-filter:blur(12px);letter-spacing:.05em}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- HEADER -->
+<header>
+  <div class="hdr">
+    <div class="logo">
+      <div class="logo-mark">C</div>
+      <div><div class="logo-name">CLAUDE CAPITAL</div><div class="logo-sub">Autonomous Investment AI</div></div>
+    </div>
+    <div class="hright">
+      <div class="spill" id="spill">
+        <div class="sdot" id="sdot" style="background:var(--amber);animation:pulse 2s infinite"></div>
+        <span id="stxt" style="color:var(--amber);font-family:'JetBrains Mono',monospace;font-size:11px">מתחבר...</span>
+      </div>
+      <span id="scd" style="display:none;font-size:11px;color:var(--muted);font-family:'JetBrains Mono',monospace"></span>
+      <button class="hbtn" onclick="loadPrices()">↺</button>
+      <button class="hbtn" onclick="document.getElementById('dbg').style.display=document.getElementById('dbg').style.display==='none'?'block':'none'">⌗</button>
+      <button class="hbtn" onclick="toggleKey()">⚿</button>
+    </div>
+  </div>
+  <div class="kpanel" id="kpanel">
+    <span style="color:var(--muted);font-size:11px;font-family:'JetBrains Mono',monospace">Finnhub Key:</span>
+    <input class="kinput" id="kinput" type="text"/>
+    <button onclick="saveKey()" style="background:linear-gradient(135deg,var(--gold),#8a6420);color:#040810;padding:6px 13px;border-radius:7px;font-size:12px;font-weight:700;border:none;cursor:pointer">שמור ורענן</button>
+    <a href="https://finnhub.io/register" target="_blank" style="color:var(--blue);font-size:11px;text-decoration:underline">הרשמה ←</a>
+  </div>
+</header>
+
+<!-- ALERTS -->
+<div class="aw" id="aw"></div>
+
+<!-- MAIN -->
+<main>
+  <div id="dbg"><div style="color:var(--blue);font-weight:700;margin-bottom:5px;font-size:11px;direction:rtl;text-align:right">⌗ Debug</div><div id="dlog"></div></div>
+  <div id="cors-banner"></div>
+
+  <!-- Summary -->
+  <div class="sgrid">
+    <div class="scard"><div class="slabel">מזומן פנוי</div><div class="sval" style="color:#a78bfa">₪24,000</div></div>
+    <div class="scard"><div class="slabel">מניות</div><div class="sval" style="color:var(--blue)" id="tickerCount">4</div></div>
+    <div class="scard"><div class="slabel">חי עכשיו</div><div class="sval" id="lval" style="color:var(--amber)">0/4</div></div>
+    <div class="scard"><div class="slabel">ניתוחים</div><div class="sval" id="acnt" style="color:#f472b6">0</div></div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <button class="tab act" id="t-active" onclick="switchTab('active')">⚡ מסחר אקטיבי</button>
+    <button class="tab" id="t-iron" onclick="switchTab('iron')">⚙ תיק ברזל</button>
+  </div>
+
+  <!-- Iron banner -->
+  <div class="iron-banner" id="iron-banner">
+    <span style="font-size:24px">⚙</span>
+    <div>
+      <div style="color:var(--cyan);font-weight:700;font-size:13px;margin-bottom:7px">תיק הברזל — צמיחת עושר לטווח ארוך</div>
+      <div style="display:flex;flex-wrap:wrap;gap:5px">
+        <span style="font-size:10px;padding:2px 9px;border-radius:99px;background:rgba(6,182,212,.09);color:var(--cyan);border:1px solid rgba(6,182,212,.2)">שימור הון</span>
+        <span style="font-size:10px;padding:2px 9px;border-radius:99px;background:rgba(6,182,212,.09);color:var(--cyan);border:1px solid rgba(6,182,212,.2)">צבירה בירידות 5-15%</span>
+        <span style="font-size:10px;padding:2px 9px;border-radius:99px;background:rgba(6,182,212,.09);color:var(--cyan);border:1px solid rgba(6,182,212,.2)">יציאה מבנית בלבד</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Prices -->
+  <section style="margin-bottom:18px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <span style="color:var(--muted);font-size:10px;letter-spacing:.1em;text-transform:uppercase">לחץ מניה לפרטים</span>
+      <span id="ptitle" style="color:var(--muted);font-size:10px;letter-spacing:.12em;text-transform:uppercase;font-family:'JetBrains Mono',monospace">LIVE ●</span>
+    </div>
+    <div class="pgrid" id="pgrid"></div>
+    <div id="dpanel-wrap"></div>
+  </section>
+
+  <!-- Analysis -->
+  <section>
+    <div class="ahdr">
+      <button class="mbtn" id="abtn" onclick="runAnalysis()">◆ Claude Capital — ניתוח עצמאי</button>
+      <span class="sectitle">Claude Capital Intelligence ▸</span>
+    </div>
+    <div class="empty" id="empty"><div style="font-size:22px;opacity:.25;margin-bottom:8px">◆</div>לחץ לניתוח Claude Capital עצמאי</div>
+    <div class="agrid" id="agrid" style="display:none"></div>
+  </section>
+</main>
+<footer>CLAUDE CAPITAL · FOR INFORMATIONAL PURPOSES ONLY · NOT FINANCIAL ADVICE</footer>
+</div>
+
+<script>
+// ════════════════════════════════════════
+// CONFIG
+// ════════════════════════════════════════
+const TICKERS={active:["NVDA","RKLB","GOOG","CAMT"],iron:["NVDA","GOOG"]};
+const LIVE_INTERVAL = 15000; // עדכון מחירים כל 15 שניות
+const REFRESH_CD    = 15;
+
+const MACRO={
+  NVDA:"Blackwell GPU cycle accelerating. Hyperscaler AI capex all-time highs. Institutional accumulation confirmed. Jensen Huang forward guidance strong.",
+  RKLB:"Neutron development on track. NSSL Phase 3 contract catalyst pending. High risk/reward. Macro pressure on space sector.",
+  GOOG:"Gemini 2.0 driving Cloud revenue lift. Search share stabilizing. YouTube advertising recovery strong. TPU reducing NVDA dependency.",
+  CAMT:"Semiconductor testing demand rising with CHIPS Act. Tied to TSMC capex cycle. Limited float = high volatility risk & opportunity.",
+};
+const FB={
+  NVDA:{price:109.02,change:1.23,changePct:1.14,volume:"312M",high:111.5,low:107.8,prevClose:107.79,open:108.1,stale:true},
+  RKLB:{price:22.41,change:-0.31,changePct:-1.37,volume:"18M",high:23.1,low:22.0,prevClose:22.72,open:22.6,stale:true},
+  GOOG:{price:163.84,change:0.87,changePct:0.53,volume:"22M",high:165.2,low:162.5,prevClose:162.97,open:163.1,stale:true},
+  CAMT:{price:72.15,change:-0.94,changePct:-1.29,volume:"4M",high:73.5,low:71.8,prevClose:73.09,open:73.0,stale:true},
+};
+const TC={
+  NVDA:{border:"rgba(118,185,0,.42)",dot:"#76b900",text:"#a3d44a",acc:"rgba(118,185,0,.09)"},
+  RKLB:{border:"rgba(255,82,82,.42)", dot:"#ff5252",text:"#ff8a80",acc:"rgba(255,82,82,.08)"},
+  GOOG:{border:"rgba(66,133,244,.42)",dot:"#4285f4",text:"#82b1ff",acc:"rgba(66,133,244,.09)"},
+  CAMT:{border:"rgba(255,167,38,.42)",dot:"#ffa726",text:"#ffd54f",acc:"rgba(255,167,38,.08)"},
+};
+const DM={
+  BUY:       {l:"BUY",       c:"#00d4a0",bg:"rgba(0,212,160,.14)",b:"rgba(0,212,160,.38)"},
+  SELL:      {l:"SELL",      c:"#ff4d6d",bg:"rgba(255,77,109,.14)",b:"rgba(255,77,109,.38)"},
+  HOLD:      {l:"HOLD",      c:"#f59e0b",bg:"rgba(245,158,11,.14)",b:"rgba(245,158,11,.38)"},
+  ACCUMULATE:{l:"ACCUMULATE",c:"#22d3ee",bg:"rgba(34,211,238,.14)",b:"rgba(34,211,238,.38)"},
+  WAIT:      {l:"WAIT",      c:"#64748b",bg:"rgba(100,116,139,.1)", b:"rgba(100,116,139,.28)"},
+};
+const RM={LOW:{l:"LOW RISK",c:"#00d4a0"},MEDIUM:{l:"MED RISK",c:"#f59e0b"},HIGH:{l:"HIGH RISK",c:"#ff4d6d"}};
+
+// ════════════════════════════════════════
+// STATE
+// ════════════════════════════════════════
+let finnhubKey="d7oehs1r01qsb7bekmkgd7oehs1r01qsb7bekml0";
+let tab="active";
+let prices=JSON.parse(JSON.stringify(FB));
+let prevPrices={};
+let selTicker=null;
+let analyses={active:{},iron:{}};
+let anLoading={};
+let busy=false;
+let cdVal=REFRESH_CD;
+let liveTimer=null;
+let tilesBuilt=false; // flag: tiles already in DOM
+
+const fmt=(n,d=2)=>typeof n==="number"?n.toFixed(d):"—";
+
+// ════════════════════════════════════════
+// DEBUG / ALERTS
+// ════════════════════════════════════════
+function dlog(m,c="info"){
+  const b=document.getElementById("dlog");
+  const el=document.createElement("div");el.className=c;
+  el.textContent=`[${new Date().toLocaleTimeString("he-IL")}] ${m}`;
+  b.appendChild(el);b.scrollTop=b.scrollHeight;
+  while(b.children.length>80)b.removeChild(b.firstChild);
+}
+function alert_(m,t="info"){
+  const cm={
+    info:  {bc:"#2a3a55",c:"#94a3b8",bg:"rgba(8,15,30,.95)"},
+    buy:   {bc:"rgba(0,212,160,.48)",c:"#6ee7b7",bg:"rgba(0,50,35,.6)"},
+    iron:  {bc:"rgba(6,182,212,.48)",c:"#67e8f9",bg:"rgba(0,35,55,.6)"},
+    success:{bc:"rgba(0,212,160,.38)",c:"#34d399",bg:"rgba(8,15,30,.95)"},
+    error: {bc:"rgba(255,77,109,.48)",c:"#fca5a5",bg:"rgba(70,0,15,.55)"},
+  };
+  const s=cm[t]||cm.info;
+  const el=document.createElement("div");el.className="alert";
+  el.style.cssText=`border-color:${s.bc};color:${s.c};background:${s.bg};direction:rtl`;
+  el.textContent=m;
+  const w=document.getElementById("aw");w.appendChild(el);
+  while(w.children.length>4)w.removeChild(w.firstChild);
+  setTimeout(()=>{try{w.removeChild(el)}catch{}},6000);
+}
+
+// ════════════════════════════════════════
+// FINNHUB — live fetch
+// ════════════════════════════════════════
+async function fetchQuote(sym){
+  try{
+    const ctrl=new AbortController();
+    const tid=setTimeout(()=>ctrl.abort(),9000);
+    const r=await fetch(`https://finnhub.io/api/v1/quote?symbol=${sym}&token=${finnhubKey}`,{signal:ctrl.signal});
+    clearTimeout(tid);
+    if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    const d=await r.json();
+    if(!d||!d.c||d.c===0)throw new Error("c=0");
+    const v=d.v||0;
+    const vol=v>=1e9?(v/1e9).toFixed(1)+"B":v>=1e6?(v/1e6).toFixed(0)+"M":v>=1e3?(v/1e3).toFixed(0)+"K":v>0?String(v):"—";
+    return{price:d.c,change:d.d??0,changePct:d.dp??0,prevClose:d.pc,high:d.h,low:d.l,open:d.o,volume:vol,stale:false};
+  }catch(e){
+    dlog(`✗ ${sym}: ${e.name==="AbortError"?"timeout":e.message}`,"err");
+    return{...FB[sym],stale:true};
+  }
+}
+
+// ════════════════════════════════════════
+// LIVE PRICE LOOP — עדכון in-place ללא DOM rebuild
+// ════════════════════════════════════════
+async function loadPrices(isAuto=false){
+  if(!isAuto) dlog("=== manual refresh ===","info");
+  prevPrices=JSON.parse(JSON.stringify(prices));
+  const entries=await Promise.all(["NVDA","RKLB","GOOG","CAMT"].map(async t=>[t,await fetchQuote(t)]));
+  prices=Object.fromEntries(entries);
+  const live=entries.filter(([,v])=>!v.stale).length;
+  setStatus(live>0?"live":"fallback",live);
+
+  if(!tilesBuilt){
+    buildPriceTiles();   // first time: build DOM
+    tilesBuilt=true;
+  } else {
+    updatePriceTiles();  // subsequent: update in-place + flash
+  }
+  renderDetail();
+  if(!isAuto){
+    if(live===0) alert_("כל המניות fallback — בדוק API key","error");
+    else alert_(`✓ ${live}/4 מחירים עודכנו`,"success");
+  }
+}
+
+function startLiveLoop(){
+  if(liveTimer) clearInterval(liveTimer);
+  loadPrices(false);
+  liveTimer=setInterval(()=>loadPrices(true), LIVE_INTERVAL);
+}
+
+// Countdown display
+setInterval(()=>{
+  cdVal=cdVal<=1?REFRESH_CD:cdVal-1;
+  const el=document.getElementById("scd");
+  if(el&&el.style.display!=="none") el.textContent=`↺ ${cdVal}s`;
+  if(cdVal===REFRESH_CD){cdVal=REFRESH_CD;} // reset handled by liveTimer
+},1000);
+
+function setStatus(s,live=0){
+  const dot=document.getElementById("sdot"),txt=document.getElementById("stxt");
+  const cd=document.getElementById("scd"),lv=document.getElementById("lval");
+  if(s==="live"){
+    dot.style.background="var(--green)";dot.style.animation="pulse 2s infinite";
+    txt.style.color="var(--green)";txt.textContent=`● ${new Date().toLocaleTimeString("he-IL")}`;
+    cd.style.display="inline";lv.style.color=live===4?"var(--green)":"var(--amber)";
+    document.getElementById("ptitle").textContent="LIVE ●";
+  }else if(s==="loading"){
+    dot.style.background="var(--amber)";txt.style.color="var(--amber)";txt.textContent="◌";cd.style.display="none";
+  }else{
+    dot.style.background="var(--red)";txt.style.color="var(--red)";txt.textContent="⚠ fallback";cd.style.display="none";
+    document.getElementById("ptitle").textContent="FALLBACK ⚠";
+  }
+  lv.textContent=`${live}/4`;
+}
+
+// ════════════════════════════════════════
+// PRICE TILES — build once, update in-place
+// ════════════════════════════════════════
+function getTickers(){ return tab==="iron"?TICKERS.iron:TICKERS.active; }
+
+function buildPriceTiles(){
+  const grid=document.getElementById("pgrid");
+  grid.innerHTML="";
+  getTickers().forEach(sym=>{
+    const tile=document.createElement("div");
+    tile.className="ptile";
+    tile.id=`tile-${sym}`;
+    tile.onclick=()=>{selTicker=selTicker===sym?null:sym;updateTileSelection();renderDetail();};
+    grid.appendChild(tile);
+    fillTileContent(tile,sym);
+  });
+}
+
+function fillTileContent(tile,sym){
+  const d=prices[sym]||FB[sym],tc=TC[sym]||{},pos=(d.change??0)>=0;
+  const isSel=selTicker===sym;
+  tile.style.borderColor=isSel?tc.border:"var(--border)";
+  tile.style.background=isSel?tc.acc:"var(--card)";
+  tile.innerHTML=`
+    <div class="ptile-ring" id="ring-${sym}" style="background:${d.stale?"var(--amber)":"var(--green)"};${d.stale?"":"animation:pulse 2s infinite"}"></div>
+    <div class="ptile-sym" style="color:${tc.text||"var(--muted)"}">${sym}</div>
+    <div class="ptile-price" id="pval-${sym}">${d.stale?"—":"$"}${fmt(d.price)}</div>
+    <div class="ptile-chg" id="pchg-${sym}" style="color:${pos?"var(--green)":"var(--red)"}">
+      ${pos?"▲ +":"▼ "}${fmt(d.change)} (${pos?"+":""}${fmt(d.changePct)}%)
+    </div>
+    ${d.high?`<div class="ptile-hl" id="phl-${sym}"><span>L $${fmt(d.low)}</span><span>H $${fmt(d.high)}</span></div>`:""}
+  `;
+}
+
+// ── In-place update — no rebuild ──
+function updatePriceTiles(){
+  getTickers().forEach(sym=>{
+    const d=prices[sym]||FB[sym];
+    const prev=prevPrices[sym];
+    const tile=document.getElementById(`tile-${sym}`);
+    if(!tile) return; // tile may not exist if tab switched
+
+    // price changed? flash the tile
+    const changed=prev&&Math.abs((prev.price||0)-(d.price||0))>0.001;
+    if(changed){
+      const up=d.price>prev.price;
+      tile.classList.remove("flash-up","flash-dn");
+      void tile.offsetWidth; // reflow to restart animation
+      tile.classList.add(up?"flash-up":"flash-dn");
+    }
+
+    // update only the text nodes — no innerHTML rebuild
+    const pval=document.getElementById(`pval-${sym}`);
+    const pchg=document.getElementById(`pchg-${sym}`);
+    const phl =document.getElementById(`phl-${sym}`);
+    const ring=document.getElementById(`ring-${sym}`);
+    const pos=(d.change??0)>=0;
+
+    if(pval) pval.textContent=`${d.stale?"":"$"}${fmt(d.price)}`;
+    if(pchg){
+      pchg.textContent=`${pos?"▲ +":"▼ "}${fmt(d.change)} (${pos?"+":""}${fmt(d.changePct)}%)`;
+      pchg.style.color=pos?"var(--green)":"var(--red)";
+    }
+    if(phl&&d.high) phl.innerHTML=`<span>L $${fmt(d.low)}</span><span>H $${fmt(d.high)}</span>`;
+    if(ring){
+      ring.style.background=d.stale?"var(--amber)":"var(--green)";
+      ring.style.animation=d.stale?"none":"pulse 2s infinite";
+    }
+  });
+}
+
+function updateTileSelection(){
+  getTickers().forEach(sym=>{
+    const tile=document.getElementById(`tile-${sym}`);
+    const tc=TC[sym]||{};
+    if(!tile)return;
+    const isSel=selTicker===sym;
+    tile.style.borderColor=isSel?tc.border:"var(--border)";
+    tile.style.background=isSel?tc.acc:"var(--card)";
+    tile.style.transform=isSel?"translateY(-2px)":"";
+  });
+}
+
+function renderDetail(){
+  const p=document.getElementById("dpanel-wrap");
+  if(!selTicker){p.innerHTML="";return;}
+  const d=prices[selTicker]||FB[selTicker],tc=TC[selTicker]||{};
+  p.innerHTML=`
+    <div class="dpanel" style="border:1px solid ${tc.border||"var(--border)"};background:${tc.acc||"var(--card)"}">
+      <div class="dp-grid">
+        ${[["Open",`$${fmt(d.open)}`],["Prev Close",`$${fmt(d.prevClose)}`],["Day High",`$${fmt(d.high)}`],["Day Low",`$${fmt(d.low)}`],["Volume",d.volume],["Status",d.stale?"⚠ stale":"● live"]].map(([l,v])=>`
+          <div><div class="dp-lbl">${l}</div><div class="dp-val" style="color:${l==="Status"?d.stale?"var(--amber)":"var(--green)":"var(--text)"}">${v}</div></div>`).join("")}
+      </div>
+      <div class="dp-insight" style="border-right:2px solid ${tc.dot||"var(--dim)"}">${MACRO[selTicker]}</div>
+    </div>`;
+}
+
+// switch tab rebuilds tiles
+function rebuildAfterTabSwitch(){
+  tilesBuilt=false;
+  buildPriceTiles();
+  tilesBuilt=true;
+}
+
+// ════════════════════════════════════════
+// CLAUDE API — 3-attempt CORS bypass
+// ════════════════════════════════════════
+async function callClaude(sys,user){
+  const payload={
+    model:"claude-sonnet-4-20250514",
+    max_tokens:1200,
+    system:sys,
+    messages:[{role:"user",content:user}]
+  };
+
+  const attempts=[
+    // 1. Direct (works from local server / some browsers)
+    async()=>{
+      dlog("→ direct","info");
+      const ctrl=new AbortController();
+      const tid=setTimeout(()=>ctrl.abort(),14000);
+      const r=await fetch("https://api.anthropic.com/v1/messages",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        signal:ctrl.signal,body:JSON.stringify(payload)
+      });
+      clearTimeout(tid);
+      if(!r.ok)throw new Error(`HTTP ${r.status}`);
+      const d=await r.json();
+      if(d.error)throw new Error(d.error.message);
+      return(d.content||[]).map(c=>c.text||"").join("").trim();
+    },
+    // 2. corsproxy.io
+    async()=>{
+      dlog("→ corsproxy.io","info");
+      const ctrl=new AbortController();
+      const tid=setTimeout(()=>ctrl.abort(),20000);
+      const r=await fetch("https://corsproxy.io/?https://api.anthropic.com/v1/messages",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        signal:ctrl.signal,body:JSON.stringify(payload)
+      });
+      clearTimeout(tid);
+      if(!r.ok)throw new Error(`HTTP ${r.status}`);
+      const d=await r.json();
+      if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));
+      return(d.content||[]).map(c=>c.text||"").join("").trim();
+    },
+    // 3. thingproxy
+    async()=>{
+      dlog("→ thingproxy","info");
+      const ctrl=new AbortController();
+      const tid=setTimeout(()=>ctrl.abort(),22000);
+      const r=await fetch("https://thingproxy.freeboard.io/fetch/https://api.anthropic.com/v1/messages",{
+        method:"POST",headers:{"Content-Type":"application/json"},
+        signal:ctrl.signal,body:JSON.stringify(payload)
+      });
+      clearTimeout(tid);
+      if(!r.ok)throw new Error(`HTTP ${r.status}`);
+      const d=await r.json();
+      if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));
+      return(d.content||[]).map(c=>c.text||"").join("").trim();
+    },
+  ];
+
+  let last="";
+  for(let i=0;i<attempts.length;i++){
+    try{
+      const res=await attempts[i]();
+      dlog(`✓ Claude API (שיטה ${i+1})`,"ok");
+      return res;
+    }catch(e){
+      last=e.name==="AbortError"?"timeout":e.message;
+      dlog(`✗ שיטה ${i+1}: ${last}`,"warn");
+    }
+  }
+  throw new Error(`כל שיטות ה-API נכשלו — ${last}`);
+}
+
+// ════════════════════════════════════════
+// CLAUDE CAPITAL ANALYSIS
+// ════════════════════════════════════════
+async function claudeAnalyze(ticker,pd,portfolioType){
+  const isIron=portfolioType==="IRON";
+
+  const sys=`You are Claude Capital — an autonomous AI investment intelligence with no emotional bias, career risk, or benchmark anchoring.
+You process fundamental value, technical momentum, macro regime, and reflexive dynamics simultaneously — with zero cognitive bias.
+${isIron?"Portfolio type: IRON (long-term compounding). Be patient, structural, anti-fragile.":"Portfolio type: ACTIVE (decisive trading). Use technical + catalyst signals."}
+Respond with ONLY a valid JSON object. Absolutely no markdown, no text outside JSON.`;
+
+  const user=`Stock: ${ticker} | Portfolio: ${portfolioType}
+Live data:
+  Price: $${fmt(pd.price)} | Change: ${(pd.change??0)>=0?"+":""}${fmt(pd.change)} (${fmt(pd.changePct)}%)
+  High: $${fmt(pd.high)} | Low: $${fmt(pd.low)} | PrevClose: $${fmt(pd.prevClose)} | Vol: ${pd.volume}
+  Quality: ${pd.stale?"STALE – market may be closed":"LIVE REAL-TIME"}
+Macro: ${MACRO[ticker]}
+
+Return ONLY this JSON (all fields required, no nulls):
+{
+  "ticker":"${ticker}",
+  "portfolio_type":"${portfolioType}",
+  "decision":"BUY|SELL|HOLD|ACCUMULATE|WAIT",
+  "confidence":<integer 0-100>,
+  "scores":{"fundamental":<1-10>,"technical":<1-10>,"macro":<1-10>},
+  "risk_level":"LOW|MEDIUM|HIGH",
+  "strategy_note":"<2 sharp Hebrew sentences — Claude Capital independent view>",
+  "action_zone":"<price range e.g. $108.50-$111.00>",
+  "stop_logic":"${isIron?"N/A — structural exit only":"<stop price + 1 line reasoning>"}",
+  "claude_quote":"<1 bold Hebrew conviction statement>",
+  "claude_edge":"<1 Hebrew sentence: what Claude sees that human investors miss>",
+  "vs_legends":{
+    "buffett_stance":"BUY|HOLD|AVOID",
+    "buffett_diff":"<Hebrew: where Claude agrees or diverges from Buffett and why>",
+    "soros_stance":"LONG|SHORT|NEUTRAL",
+    "soros_diff":"<Hebrew: where Claude agrees or diverges from Soros and why>",
+    "dalio_stance":"OVERWEIGHT|NEUTRAL|UNDERWEIGHT",
+    "dalio_diff":"<Hebrew: where Claude agrees or diverges from Dalio and why>"
+  }
+}`;
+
+  try{
+    dlog(`→ analyzing ${ticker}`,"info");
+    const raw=await callClaude(sys,user);
+    const m=raw.match(/\{[\s\S]*\}/);
+    if(!m)throw new Error("no JSON in response");
+    let result;
+    try{result=JSON.parse(m[0]);}
+    catch(pe){throw new Error(`JSON parse: ${pe.message}`);}
+    result._engine="claude";
+    dlog(`✓ ${ticker}: ${result.decision} ${result.confidence}%`,"ok");
+    return result;
+  }catch(e){
+    dlog(`✗ ${ticker}: ${e.message}`,"err");
+    alert_(`⚠ ${ticker}: ${e.message.slice(0,50)}`,"error");
+    // show CORS banner
+    showCorsBanner();
+    const fb=localFallback(ticker,pd,portfolioType);
+    fb._failReason=e.message;
+    return fb;
+  }
+}
+
+function showCorsBanner(){
+  const b=document.getElementById("cors-banner");
+  if(b.style.display==="block")return;
+  b.innerHTML=`<div style="font-weight:700;font-size:12px;color:#fbbf24;margin-bottom:6px">⚠ Claude API נחסם ע"י CORS — המנוע המקומי פעיל</div>
+<div style="color:#fcd34d">לניתוח Claude אמיתי, הרץ את הקובץ דרך שרת מקומי:</div>
+<div style="margin-top:5px;display:flex;flex-direction:column;gap:3px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#fbbf24">
+  <span>▸ <strong>python3 -m http.server 8080</strong> → http://localhost:8080</span>
+  <span>▸ <strong>npx serve .</strong> → כנ"ל</span>
+</div>
+<div style="margin-top:7px;font-size:10px;color:rgba(252,211,77,.55)">הניתוח המקומי פעיל ומציג המלצות מבוססות לוגיקה טכנית מתקדמת</div>`;
+  b.style.display="block";
+}
+
+// ════════════════════════════════════════
+// LOCAL FALLBACK — improved logic
+// ════════════════════════════════════════
+function localFallback(ticker,pd,portfolioType){
+  const isIron=portfolioType==="IRON";
+  const pct=pd.changePct??0;
+  const rng=(pd.high??pd.price)-(pd.low??pd.price);
+  const pos=rng>0?(pd.price-(pd.low??pd.price))/rng:0.5;
+  const mom=pct>4?9:pct>2?8:pct>0.8?7:pct>0?6:pct>-1?5:pct>-3?4:3;
+  const tec=pos>0.75?8:pos>0.55?7:pos>0.35?6:5;
+  const mac={NVDA:9,GOOG:8,CAMT:7,RKLB:6}[ticker]??6;
+  const fun=isIron?Math.min(10,Math.round((mac*2+mom)/3)):Math.round((mom+tec)/2);
+  const avg=(fun+tec+mac)/3;
+  const vol=rng>0&&pd.price>0?rng/pd.price:0.02;
+  const risk=vol>0.042?"HIGH":vol>0.022?"MEDIUM":"LOW";
+
+  let decision;
+  if(isIron){
+    decision=pct<-7?"ACCUMULATE":pct<-3?"ACCUMULATE":avg>=7.5?"HOLD":avg>=6?"HOLD":"WAIT";
+  }else{
+    decision=pct>2.5&&avg>=7.5?"BUY":pct>1.2&&avg>=7?"BUY":pct<-3?"SELL":pct<-1.5&&tec<5?"SELL":avg>=6.5?"HOLD":"WAIT";
+  }
+
+  const conf=Math.min(86,Math.max(44,Math.round(avg*9.2+(pd.stale?-9:1))));
+  const lo=(pd.price*0.984).toFixed(2),hi=(pd.price*1.014).toFixed(2);
+
+  const NOTES={
+    NVDA:{BUY:"מומנטום AI חזק + מאקרו תומך. כניסה על pullback לתמיכה.",HOLD:"NVDA בטווח — שמור פוזיציה, אל תגדיל עד בירור כיוון.",ACCUMULATE:"ירידה = הזדמנות צבירה ל-Blackwell cycle. כניסה בשלבים.",SELL:"חולשה טכנית חריגה. הפחת חשיפה, סטופ קצר.",WAIT:"אין אות ברור. המתן לקטליסטור ברור."},
+    RKLB:{BUY:"מומנטום חיובי + NSSL catalyst קרוב. כניסה עם סטופ הדוק.",HOLD:"RKLB volatile — שמור עם סטופ מוגדר.",ACCUMULATE:"ירידה מחזקת opportunity. Float קטן = bounce חד.",SELL:"לחץ מקרו + חולשה. יציאה חלקית מהירה.",WAIT:"RKLB לא ברור — אל תיכנס ללא קטליסטור."},
+    GOOG:{BUY:"Alphabet חוזר לכוח — Gemini + ענן מניעים. כניסה אסטרטגית.",HOLD:"GOOG יציב — מאקרו AI תומך, מחיר הוגן.",ACCUMULATE:"הזדמנות צבירה לטווח ארוך. Alphabet — נכס ליבה.",SELL:"חולשה — שקול הפחתת חשיפה.",WAIT:"המתן לאות ברור מ-Gemini metrics."},
+    CAMT:{BUY:"CHIPS Act ביקוש עולה. כניסה עם סטופ הדוק בגלל volatility.",HOLD:"CAMT — float מוגבל. שמור עם סטופ.",ACCUMULATE:"ירידה = הזדמנות. TSMC capex cycle תומך.",SELL:"ירידה + float קטן = EXIT מהיר.",WAIT:"CAMT — המתן לאות capex ברור."},
+  };
+  const note=(NOTES[ticker]||{})[decision]||"ניתוח מקומי פעיל.";
+
+  const stances={
+    NVDA:{b:"HOLD",bs:"NVDA בחפיר AI — אך Buffett ידרוש מרווח ביטחון גדול יותר. Claude רואה מומנטום שמצדיק כניסה.",s:"LONG",ss:"Soros יכיר ברפלקסיביות — כל GPU נמכר מגדיל ביקוש הבא. Claude מסכים.",d:"OVERWEIGHT",ds:"Dalio יכלול NVDA ב-AI allocation. Claude מוסיף: timing קריטי."},
+    RKLB:{b:"AVOID",bs:"Buffett לא יבין space micro-cap. Claude רואה ריאל-אופציה שמצדיקה חשיפה קטנה.",s:"LONG",ss:"Soros יחפש momentum catalyst — NSSL. Claude מסכים, אך עם sizing קטן.",d:"NEUTRAL",ds:"Dalio ידרוש מתאם נמוך — RKLB מספק. Claude מוסיף volatility warning."},
+    GOOG:{b:"BUY",bs:"Buffett אוהב Alphabet — מוט חיפוש + ענן. Claude מסכים ומוסיף AI edge.",s:"LONG",ss:"Soros רואה momentum בענן AI. Claude מסכים — Gemini = growth catalyst.",d:"OVERWEIGHT",ds:"Dalio יכלול GOOG כ-core equity. Claude מסכים לחלוטין."},
+    CAMT:{b:"HOLD",bs:"Buffett ידרוש מרווח ביטחון — float קטן מסוכן. Claude יותר אגרסיבי.",s:"NEUTRAL",ss:"Soros יחפש catalyst cycle — TSMC capex. Claude מסכים, timing uncertain.",d:"NEUTRAL",ds:"Dalio יגביל ל-small allocation. Claude מסכים בגלל volatility."},
+  };
+  const st=stances[ticker]||{b:"HOLD",bs:"ניתוח מקומי.",s:"NEUTRAL",ss:"ניתוח מקומי.",d:"NEUTRAL",ds:"ניתוח מקומי."};
+
+  return{
+    ticker,portfolio_type:portfolioType,decision,confidence:conf,
+    scores:{fundamental:fun,technical:tec,macro:mac},
+    risk_level:risk,strategy_note:note,
+    action_zone:`$${lo}–$${hi}`,
+    stop_logic:isIron?"N/A":`$${(pd.price*0.935).toFixed(2)} — סטופ טכני`,
+    claude_quote:`Claude Capital: "${decision==="BUY"||decision==="ACCUMULATE"?"ההזדמנות ברורה — הנתונים מדברים":decision==="SELL"?"הסיכון עולה על הסיכוי — יציאה":"ממתין לאות חד וברור לפני פעולה."}"`,
+    claude_edge:decision==="BUY"||decision==="ACCUMULATE"
+      ?"Claude מזהה: מומנטום + מאקרו מסונכרנים — חלון כניסה פתוח שאנשים מפספסים מפחד."
+      :"Claude מזהה: חוסר ודאות בשוק — הפחד והחמדנות מבלבלים — נכון להמתין.",
+    vs_legends:{
+      buffett_stance:st.b,buffett_diff:st.bs,
+      soros_stance:st.s,soros_diff:st.ss,
+      dalio_stance:st.d,dalio_diff:st.ds,
+    },
+    _engine:"local",
+  };
+}
+
+// ════════════════════════════════════════
+// RUN ANALYSIS
+// ════════════════════════════════════════
+async function runAnalysis(){
+  if(busy)return;
+  busy=true;
+  const pType=tab==="iron"?"IRON":"ACTIVE";
+  const tickers=tab==="iron"?TICKERS.iron:TICKERS.active;
+  const btn=document.getElementById("abtn");
+  btn.disabled=true;
+  btn.innerHTML=`<span class="spinner"></span> מנתח...`;
+  tickers.forEach(t=>{anLoading[t]=true;});
+  renderAnalysis();
+
+  for(const t of tickers){
+    alert_(`◆ מנתח ${t}…`,"info");
+    try{
+      const result=await claudeAnalyze(t,prices[t]||FB[t],pType);
+      analyses[tab][t]=result;
+      if(pType==="ACTIVE"&&result.decision==="BUY"&&result.confidence>=72)
+        alert_(`◆ BUY ${t} — ${result.confidence}% confidence`,"buy");
+      if(pType==="IRON"&&result.decision==="ACCUMULATE")
+        alert_(`◆ ACCUMULATE ${t}`,"iron");
+    }catch(e){
+      dlog(`✗ ${t}: ${e.message}`,"err");
+    }
+    delete anLoading[t];
+    renderAnalysis();
+  }
+
+  busy=false;
+  btn.disabled=false;
+  btn.style.background="linear-gradient(135deg,var(--gold),#8a6420)";
+  btn.innerHTML=tab==="iron"?"◆ Claude Capital — סריקת ברזל":"◆ Claude Capital — ניתוח עצמאי";
+
+  // check if all local (CORS failed)
+  const cur=analyses[tab];
+  const allLocal=tickers.every(t=>cur[t]&&cur[t]._engine==="local");
+  if(allLocal) showCorsBanner();
+  else alert_(`✓ ניתוח ${pType} הושלם`,"success");
+}
+
+// ════════════════════════════════════════
+// RENDER ANALYSIS CARDS
+// ════════════════════════════════════════
+function renderAnalysis(){
+  const an=analyses[tab],tickers=tab==="iron"?TICKERS.iron:TICKERS.active;
+  const tot=Object.keys(analyses.active).length+Object.keys(analyses.iron).length;
+  document.getElementById("acnt").textContent=tot;
+  const hasAny=tickers.some(t=>an[t]||anLoading[t]);
+  document.getElementById("empty").style.display=hasAny?"none":"block";
+  document.getElementById("agrid").style.display=hasAny?"grid":"none";
+  if(!hasAny)return;
+  const grid=document.getElementById("agrid");
+  grid.innerHTML="";
+
+  tickers.forEach(t=>{
+    const res=an[t],pd=prices[t]||FB[t],loading=anLoading[t],tc=TC[t]||{};
+    const card=document.createElement("div");
+    card.className="dcard";card.style.borderColor=tc.border||"var(--border)";
+
+    if(loading){
+      card.innerHTML=`
+        <div class="sk" style="height:19px;width:44%;margin-bottom:13px"></div>
+        <div class="sk" style="height:12px;width:82%;margin-bottom:7px"></div>
+        <div class="sk" style="height:12px;width:58%;margin-bottom:15px"></div>
+        <div class="sk" style="height:58px;border-radius:11px;margin-bottom:9px"></div>
+        <div class="sk" style="height:58px;border-radius:11px"></div>`;
+      grid.appendChild(card);return;
+    }
+    if(!res){card.innerHTML=`<div style="color:var(--dim);text-align:center;padding:28px">—</div>`;grid.appendChild(card);return;}
+
+    const dm=DM[res.decision]||{},rm=RM[res.risk_level]||{};
+    const conf=res.confidence,r=21,circ=2*Math.PI*r;
+    const cc=conf>=80?"#00d4a0":conf>=60?"#f59e0b":"#ff4d6d";
+    const sc=res.scores||{},vl=res.vs_legends||{};
+    const sc_=s=>["BUY","LONG","OVERWEIGHT"].includes(s)?"var(--green)":["SELL","SHORT","UNDERWEIGHT"].includes(s)?"var(--red)":"var(--amber)";
+    const engBadge=res._engine==="claude"
+      ?`<span style="font-size:9px;padding:1px 7px;border-radius:99px;background:var(--gold-d);color:var(--gold);border:1px solid var(--gold-b)">◆ Claude</span>`
+      :`<span style="font-size:9px;padding:1px 7px;border-radius:99px;background:rgba(59,130,246,.1);color:#82b1ff;border:1px solid rgba(59,130,246,.22)">⌗ local${res._failReason?" (CORS)":""}</span>`;
+
+    card.innerHTML=`
+      <div class="dc-top">
+        <div class="dc-tg">
+          <div style="width:8px;height:8px;border-radius:50%;background:${tc.dot||"var(--muted)"};animation:pulse 2s infinite;flex-shrink:0"></div>
+          <span class="dc-ticker" style="color:${tc.text||"var(--text)"}">${res.ticker}</span>
+          <span class="dc-pill" style="background:${res.portfolio_type==="IRON"?"rgba(6,182,212,.1)":"rgba(139,92,246,.1)"};color:${res.portfolio_type==="IRON"?"var(--cyan)":"#c4b5fd"};border:1px solid ${res.portfolio_type==="IRON"?"rgba(6,182,212,.28)":"rgba(139,92,246,.28)"}">${res.portfolio_type==="IRON"?"IRON":"ACTIVE"}</span>
+          ${engBadge}
+        </div>
+        <span class="dc-dec" style="background:${dm.bg};color:${dm.c};border:1px solid ${dm.b}">${dm.l||res.decision}</span>
+      </div>
+
+      <div style="display:flex;gap:13px;align-items:center;margin-bottom:13px">
+        <div class="conf-wrap">
+          <svg viewBox="0 0 52 52" style="width:100%;height:100%;transform:rotate(-90deg)">
+            <circle cx="26" cy="26" r="${r}" fill="none" stroke="var(--dim)" stroke-width="4"/>
+            <circle cx="26" cy="26" r="${r}" fill="none" stroke="${cc}" stroke-width="4"
+              stroke-dasharray="${(conf/100)*circ} ${circ}" stroke-linecap="round" style="transition:stroke-dasharray 1.4s ease"/>
+          </svg>
+          <span class="conf-pct" style="color:${cc}">${conf}%</span>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:5px">
+          ${[["Fundamental",sc.fundamental??5],["Technical",sc.technical??5],["Macro",sc.macro??5]].map(([l,v])=>{
+            const c=v>=8?"#00d4a0":v>=6?"#f59e0b":"#ff4d6d";
+            return`<div class="srow"><span style="width:72px;color:var(--muted);text-align:right;flex-shrink:0;font-size:10px">${l}</span><div class="strack"><div class="sfill" style="width:${(v/10)*100}%;background:linear-gradient(90deg,${c}55,${c})"></div></div><span class="snm" style="color:${c}">${v}</span></div>`;
+          }).join("")}
+        </div>
+      </div>
+
+      <div style="display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+        ${pd?`<span style="padding:2px 9px;border-radius:99px;font-size:11px;background:var(--surface);color:var(--text);font-weight:700;font-family:'JetBrains Mono',monospace">$${fmt(pd.price)}</span>`:""}
+        <span style="padding:2px 9px;border-radius:99px;font-size:10px;color:${rm.c};border:1px solid ${rm.c}30;background:${rm.c}10;font-family:'JetBrains Mono',monospace">${rm.l}</span>
+        ${pd&&!pd.stale?`<span style="font-size:10px;color:var(--green);display:flex;align-items:center;gap:3px;font-family:'JetBrains Mono',monospace"><span style="width:4px;height:4px;border-radius:50%;background:var(--green);display:inline-block;animation:pulse 2s infinite"></span>LIVE</span>`:""}
+      </div>
+
+      <div class="snote" style="border-right-color:${dm.c||"var(--dim)"}">${res.strategy_note}</div>
+
+      <!-- Oracle -->
+      <div style="margin-bottom:12px">
+        <button class="oracle-toggle" onclick="toggleOracle(this)">
+          <span style="font-size:15px">◆</span>
+          <span class="otlabel">Claude Capital Intelligence</span>
+          <span style="font-size:10px;color:rgba(201,168,76,.5)">vs. Buffett · Soros · Dalio</span>
+          <span class="otarr">▼</span>
+        </button>
+        <div class="oracle-body">
+          <div class="claude-verdict">
+            <div class="claude-badge">◆</div>
+            <div style="flex:1">
+              <div class="cname">Claude Capital — עצמאי</div>
+              <div class="cquote">${res.claude_quote||res.strategy_note}</div>
+              <div class="cedge" style="margin-top:5px;font-size:11px;color:var(--gold)">▸ ${res.claude_edge||"—"}</div>
+              <div style="display:flex;gap:5px;margin-top:7px;flex-wrap:wrap">
+                <span style="padding:2px 8px;border-radius:99px;font-size:10px;background:${dm.bg};color:${dm.c};border:1px solid ${dm.b};font-family:'JetBrains Mono',monospace">◆ ${dm.l||res.decision}</span>
+                <span style="padding:2px 8px;border-radius:99px;font-size:10px;background:${cc}14;color:${cc};border:1px solid ${cc}30;font-family:'JetBrains Mono',monospace">${conf}% confidence</span>
+              </div>
+            </div>
+          </div>
+          <div style="font-size:9px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:7px">השוואה — איפה Claude שונה מהגורואים</div>
+          <table class="ctab">
+            <thead><tr><th>משקיע</th><th>עמדה</th><th>ניתוח Claude</th></tr></thead>
+            <tbody>
+              <tr><td><span style="color:var(--muted);font-size:11px">🎩 Buffett</span></td><td><span class="stance" style="background:${sc_(vl.buffett_stance)}20;color:${sc_(vl.buffett_stance)};border:1px solid ${sc_(vl.buffett_stance)}40">${vl.buffett_stance||"—"}</span></td><td style="color:#7888a0;font-size:10px;font-family:'Space Grotesk',sans-serif;line-height:1.55">${vl.buffett_diff||"—"}</td></tr>
+              <tr><td><span style="color:var(--muted);font-size:11px">⚡ Soros</span></td><td><span class="stance" style="background:${sc_(vl.soros_stance)}20;color:${sc_(vl.soros_stance)};border:1px solid ${sc_(vl.soros_stance)}40">${vl.soros_stance||"—"}</span></td><td style="color:#7888a0;font-size:10px;font-family:'Space Grotesk',sans-serif;line-height:1.55">${vl.soros_diff||"—"}</td></tr>
+              <tr><td><span style="color:var(--muted);font-size:11px">⚖ Dalio</span></td><td><span class="stance" style="background:${sc_(vl.dalio_stance)}20;color:${sc_(vl.dalio_stance)};border:1px solid ${sc_(vl.dalio_stance)}40">${vl.dalio_stance||"—"}</span></td><td style="color:#7888a0;font-size:10px;font-family:'Space Grotesk',sans-serif;line-height:1.55">${vl.dalio_diff||"—"}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <button class="ebtn" onclick="toggleEntry(this)">▼ פרטי כניסה</button>
+      <div class="edetail">
+        <div class="erow" style="background:rgba(0,212,160,.07)"><span style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.06em">Entry Zone</span><span style="color:var(--green);font-weight:700">${res.action_zone}</span></div>
+        <div class="erow" style="background:rgba(245,158,11,.07)"><span style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.06em">Stop Logic</span><span style="color:var(--amber);font-weight:700">${res.stop_logic}</span></div>
+        ${pd?.high?`<div class="erow" style="background:rgba(255,255,255,.025)"><span style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.06em">Day Range</span><span style="color:var(--text)">$${fmt(pd.low)} — $${fmt(pd.high)}</span></div>`:""}
+      </div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+function toggleOracle(btn){
+  const body=btn.nextElementSibling;const arr=btn.querySelector(".otarr");
+  const open=body.style.display==="block";
+  body.style.display=open?"none":"block";
+  if(arr){arr.textContent=open?"▼":"▲";}
+}
+function toggleEntry(btn){
+  const d=btn.nextElementSibling;const open=d.style.display==="flex";
+  d.style.display=open?"none":"flex";btn.textContent=open?"▼ פרטי כניסה":"▲ סגור";
+}
+
+// ════════════════════════════════════════
+// TAB / KEY
+// ════════════════════════════════════════
+function switchTab(t){
+  tab=t;selTicker=null;
+  document.getElementById("t-active").className="tab"+(t==="active"?" act":"");
+  document.getElementById("t-iron").className  ="tab"+(t==="iron"  ?" iro":"");
+  document.getElementById("iron-banner").style.display=t==="iron"?"flex":"none";
+  document.getElementById("tickerCount").textContent=t==="iron"?"2":"4";
+  const btn=document.getElementById("abtn");
+  btn.innerHTML=t==="iron"?"◆ Claude Capital — סריקת ברזל":"◆ Claude Capital — ניתוח עצמאי";
+  rebuildAfterTabSwitch();
+  renderDetail();
+  renderAnalysis();
+}
+
+function toggleKey(){
+  const p=document.getElementById("kpanel");
+  p.style.display=p.style.display==="flex"?"none":"flex";
+  document.getElementById("kinput").value=finnhubKey;
+}
+function saveKey(){
+  finnhubKey=document.getElementById("kinput").value.trim();
+  document.getElementById("kpanel").style.display="none";
+  dlog(`Key: ${finnhubKey.slice(0,8)}...`,"info");
+  tilesBuilt=false;
+  startLiveLoop();
+}
+
+// ════════════════════════════════════════
+// BOOT
+// ════════════════════════════════════════
+dlog("◆ Claude Capital — boot","info");
+renderAnalysis();
+startLiveLoop();
+</script>
+</body>
+</html>
