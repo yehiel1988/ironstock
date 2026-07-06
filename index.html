@@ -553,15 +553,20 @@ async function claudeAnalyze(ticker,pd,portfolioType){
 // ════════════════════════════════════════
 // LOCAL ANALYSIS ENGINE — deterministic, rule-based
 // ════════════════════════════════════════
+// Fundamental = business quality/moat, deliberately static — a stock's
+// balance sheet doesn't change because the tape moved 5% today.
+const FUND_QUALITY={NVDA:9,GOOG:9,CAMT:6,RKLB:4,LUNR:3};
+
 function localFallback(ticker,pd,portfolioType){
   const isIron=portfolioType==="IRON";
   const pct=pd.changePct??0;
   const rng=(pd.high??pd.price)-(pd.low??pd.price);
   const pos=rng>0?(pd.price-(pd.low??pd.price))/rng:0.5;
   const mom=pct>4?9:pct>2?8:pct>0.8?7:pct>0?6:pct>-1?5:pct>-3?4:3;
-  const tec=pos>0.75?8:pos>0.55?7:pos>0.35?6:5;
+  const posScore=pos>0.75?8:pos>0.55?7:pos>0.35?6:5;
+  const tec=Math.round((posScore+mom)/2); // momentum + position-in-range = technical
   const mac={NVDA:9,GOOG:8,CAMT:7,RKLB:6,LUNR:5}[ticker]??6;
-  const fun=isIron?Math.min(10,Math.round((mac*2+mom)/3)):Math.round((mom+tec)/2);
+  const fun=FUND_QUALITY[ticker]??6;
   const avg=(fun+tec+mac)/3;
   const vol=rng>0&&pd.price>0?rng/pd.price:0.02;
   const risk=vol>0.042?"HIGH":vol>0.022?"MEDIUM":"LOW";
@@ -586,7 +591,7 @@ function localFallback(ticker,pd,portfolioType){
   const note=(NOTES[ticker]||{})[decision]||"ניתוח מקומי פעיל.";
 
   const stances={
-    NVDA:{b:"HOLD",bs:"NVDA בחפיר AI — אך Buffett ידרוש מרווח ביטחון גדול יותר. Claude רואה מומנטום שמצדיק כניסה.",s:"LONG",ss:"Soros יכיר ברפלקסיביות — כל GPU נמכר מגדיל ביקוש הבא. Claude מסכים.",d:"OVERWEIGHT",ds:"Dalio יכלול NVDA ב-AI allocation. Claude מוסיף: timing קריטי."},
+    NVDA:{b:"HOLD",bs:"NVDA בחפיר AI — אך Buffett ידרוש מרווח ביטחון גדול יותר. Claude מתאים את החשיפה למומנטום היומי בפועל, לא לסיפור לטווח ארוך בלבד.",s:"LONG",ss:"Soros יכיר ברפלקסיביות — כל GPU נמכר מגדיל ביקוש הבא. Claude מסכים.",d:"OVERWEIGHT",ds:"Dalio יכלול NVDA ב-AI allocation. Claude מוסיף: timing קריטי."},
     RKLB:{b:"AVOID",bs:"Buffett לא יבין space micro-cap. Claude רואה ריאל-אופציה שמצדיקה חשיפה קטנה.",s:"LONG",ss:"Soros יחפש momentum catalyst — NSSL. Claude מסכים, אך עם sizing קטן.",d:"NEUTRAL",ds:"Dalio ידרוש מתאם נמוך — RKLB מספק. Claude מוסיף volatility warning."},
     GOOG:{b:"BUY",bs:"Buffett אוהב Alphabet — מוט חיפוש + ענן. Claude מסכים ומוסיף AI edge.",s:"LONG",ss:"Soros רואה momentum בענן AI. Claude מסכים — Gemini = growth catalyst.",d:"OVERWEIGHT",ds:"Dalio יכלול GOOG כ-core equity. Claude מסכים לחלוטין."},
     CAMT:{b:"HOLD",bs:"Buffett ידרוש מרווח ביטחון — float קטן מסוכן. Claude יותר אגרסיבי.",s:"NEUTRAL",ss:"Soros יחפש catalyst cycle — TSMC capex. Claude מסכים, timing uncertain.",d:"NEUTRAL",ds:"Dalio יגביל ל-small allocation. Claude מסכים בגלל volatility."},
@@ -603,6 +608,8 @@ function localFallback(ticker,pd,portfolioType){
     claude_quote:`Claude Capital: "${decision==="BUY"||decision==="ACCUMULATE"?"ההזדמנות ברורה — הנתונים מדברים":decision==="SELL"?"הסיכון עולה על הסיכוי — יציאה":"ממתין לאות חד וברור לפני פעולה."}"`,
     claude_edge:decision==="BUY"||decision==="ACCUMULATE"
       ?"Claude מזהה: מומנטום + מאקרו מסונכרנים — חלון כניסה פתוח שאנשים מפספסים מפחד."
+      :decision==="SELL"
+      ?"Claude מזהה: הסיכון הטכני עולה על הפרמיה הפונדמנטלית כרגע — לא זמן להתעקש על עמדה."
       :"Claude מזהה: חוסר ודאות בשוק — הפחד והחמדנות מבלבלים — נכון להמתין.",
     vs_legends:{
       buffett_stance:st.b,buffett_diff:st.bs,
@@ -687,6 +694,11 @@ function renderAnalysis(){
     const sc=res.scores||{},vl=res.vs_legends||{};
     const sc_=s=>["BUY","LONG","OVERWEIGHT"].includes(s)?"var(--green)":["SELL","SHORT","UNDERWEIGHT"].includes(s)?"var(--red)":"var(--amber)";
     const engBadge=`<span style="font-size:9px;padding:1px 7px;border-radius:99px;background:rgba(59,130,246,.1);color:#82b1ff;border:1px solid rgba(59,130,246,.22)">⌗ local engine</span>`;
+    const zone=res.decision==="SELL"
+      ?{label:"Exit Zone",color:"var(--red)",bg:"rgba(255,77,109,.07)"}
+      :res.decision==="HOLD"||res.decision==="WAIT"
+      ?{label:"Watch Zone",color:"var(--amber)",bg:"rgba(245,158,11,.07)"}
+      :{label:"Entry Zone",color:"var(--green)",bg:"rgba(0,212,160,.07)"};
 
     card.innerHTML=`
       <div class="dc-top">
@@ -757,9 +769,9 @@ function renderAnalysis(){
         </div>
       </div>
 
-      <button class="ebtn" onclick="toggleEntry(this)">▼ פרטי כניסה</button>
+      <button class="ebtn" onclick="toggleEntry(this)">▼ פרטי ביצוע</button>
       <div class="edetail">
-        <div class="erow" style="background:rgba(0,212,160,.07)"><span style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.06em">Entry Zone</span><span style="color:var(--green);font-weight:700">${res.action_zone}</span></div>
+        <div class="erow" style="background:${zone.bg}"><span style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.06em">${zone.label}</span><span style="color:${zone.color};font-weight:700">${res.action_zone}</span></div>
         <div class="erow" style="background:rgba(245,158,11,.07)"><span style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.06em">Stop Logic</span><span style="color:var(--amber);font-weight:700">${res.stop_logic}</span></div>
         ${pd?.high?`<div class="erow" style="background:rgba(255,255,255,.025)"><span style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.06em">Day Range</span><span style="color:var(--text)">$${fmt(pd.low)} — $${fmt(pd.high)}</span></div>`:""}
       </div>
@@ -776,7 +788,7 @@ function toggleOracle(btn){
 }
 function toggleEntry(btn){
   const d=btn.nextElementSibling;const open=d.style.display==="flex";
-  d.style.display=open?"none":"flex";btn.textContent=open?"▼ פרטי כניסה":"▲ סגור";
+  d.style.display=open?"none":"flex";btn.textContent=open?"▼ פרטי ביצוע":"▲ סגור";
 }
 
 // ════════════════════════════════════════
