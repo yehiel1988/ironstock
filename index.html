@@ -52,9 +52,6 @@ header{position:sticky;top:0;z-index:100;background:rgba(4,8,16,.94);border-bott
 .kinput{flex:1;min-width:200px;background:var(--surface);border:1px solid var(--dim);border-radius:7px;padding:6px 12px;font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--text);outline:none;transition:border-color .2s}
 .kinput:focus{border-color:var(--gold)}
 
-/* ── CORS banner ── */
-#cors-banner{display:none;background:rgba(245,158,11,.07);border:1px solid rgba(245,158,11,.25);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:11px;color:#fcd34d;line-height:1.8;direction:rtl;animation:fadeUp .3s ease}
-
 /* ── Main ── */
 main{max-width:1280px;margin:0 auto;padding:22px 24px 88px;position:relative;z-index:1}
 
@@ -223,13 +220,12 @@ footer{position:fixed;bottom:0;left:0;right:0;background:rgba(4,8,16,.94);border
 <!-- MAIN -->
 <main>
   <div id="dbg"><div style="color:var(--blue);font-weight:700;margin-bottom:5px;font-size:11px;direction:rtl;text-align:right">⌗ Debug</div><div id="dlog"></div></div>
-  <div id="cors-banner"></div>
 
   <!-- Summary -->
   <div class="sgrid">
     <div class="scard"><div class="slabel">מזומן פנוי</div><div class="sval" style="color:#a78bfa">₪24,000</div></div>
-    <div class="scard"><div class="slabel">מניות</div><div class="sval" style="color:var(--blue)" id="tickerCount">4</div></div>
-    <div class="scard"><div class="slabel">חי עכשיו</div><div class="sval" id="lval" style="color:var(--amber)">0/4</div></div>
+    <div class="scard"><div class="slabel">מניות</div><div class="sval" style="color:var(--blue)" id="tickerCount">5</div></div>
+    <div class="scard"><div class="slabel">חי עכשיו</div><div class="sval" id="lval" style="color:var(--amber)">0/5</div></div>
     <div class="scard"><div class="slabel">ניתוחים</div><div class="sval" id="acnt" style="color:#f472b6">0</div></div>
   </div>
 
@@ -279,7 +275,7 @@ footer{position:fixed;bottom:0;left:0;right:0;background:rgba(4,8,16,.94);border
 // ════════════════════════════════════════
 // CONFIG
 // ════════════════════════════════════════
-const TICKERS={active:["NVDA","RKLB","GOOG","CAMT"],iron:["NVDA","GOOG"]};
+const TICKERS={active:["NVDA","RKLB","GOOG","CAMT","LUNR"],iron:["NVDA","GOOG"]};
 const LIVE_INTERVAL = 15000; // עדכון מחירים כל 15 שניות
 const REFRESH_CD    = 15;
 
@@ -288,18 +284,21 @@ const MACRO={
   RKLB:"Neutron development on track. NSSL Phase 3 contract catalyst pending. High risk/reward. Macro pressure on space sector.",
   GOOG:"Gemini 2.0 driving Cloud revenue lift. Search share stabilizing. YouTube advertising recovery strong. TPU reducing NVDA dependency.",
   CAMT:"Semiconductor testing demand rising with CHIPS Act. Tied to TSMC capex cycle. Limited float = high volatility risk & opportunity.",
+  LUNR:"Intuitive Machines — NASA CLPS lunar lander contracts. IM-2/IM-3 mission cadence is the key catalyst. Pre-revenue-scale micro-cap, extreme volatility.",
 };
 const FB={
   NVDA:{price:109.02,change:1.23,changePct:1.14,volume:"312M",high:111.5,low:107.8,prevClose:107.79,open:108.1,stale:true},
   RKLB:{price:22.41,change:-0.31,changePct:-1.37,volume:"18M",high:23.1,low:22.0,prevClose:22.72,open:22.6,stale:true},
   GOOG:{price:163.84,change:0.87,changePct:0.53,volume:"22M",high:165.2,low:162.5,prevClose:162.97,open:163.1,stale:true},
   CAMT:{price:72.15,change:-0.94,changePct:-1.29,volume:"4M",high:73.5,low:71.8,prevClose:73.09,open:73.0,stale:true},
+  LUNR:{price:9.75,change:-0.22,changePct:-2.21,volume:"6M",high:10.15,low:9.52,prevClose:9.97,open:9.9,stale:true},
 };
 const TC={
   NVDA:{border:"rgba(118,185,0,.42)",dot:"#76b900",text:"#a3d44a",acc:"rgba(118,185,0,.09)"},
   RKLB:{border:"rgba(255,82,82,.42)", dot:"#ff5252",text:"#ff8a80",acc:"rgba(255,82,82,.08)"},
   GOOG:{border:"rgba(66,133,244,.42)",dot:"#4285f4",text:"#82b1ff",acc:"rgba(66,133,244,.09)"},
   CAMT:{border:"rgba(255,167,38,.42)",dot:"#ffa726",text:"#ffd54f",acc:"rgba(255,167,38,.08)"},
+  LUNR:{border:"rgba(167,139,250,.42)",dot:"#a78bfa",text:"#c4b5fd",acc:"rgba(167,139,250,.08)"},
 };
 const DM={
   BUY:       {l:"BUY",       c:"#00d4a0",bg:"rgba(0,212,160,.14)",b:"rgba(0,212,160,.38)"},
@@ -313,7 +312,7 @@ const RM={LOW:{l:"LOW RISK",c:"#00d4a0"},MEDIUM:{l:"MED RISK",c:"#f59e0b"},HIGH:
 // ════════════════════════════════════════
 // STATE
 // ════════════════════════════════════════
-let finnhubKey="d7oehs1r01qsb7bekmkgd7oehs1r01qsb7bekml0";
+let finnhubKey=localStorage.getItem("finnhubKey")||"";
 let tab="active";
 let prices=JSON.parse(JSON.stringify(FB));
 let prevPrices={};
@@ -381,7 +380,7 @@ async function fetchQuote(sym){
 async function loadPrices(isAuto=false){
   if(!isAuto) dlog("=== manual refresh ===","info");
   prevPrices=JSON.parse(JSON.stringify(prices));
-  const entries=await Promise.all(["NVDA","RKLB","GOOG","CAMT"].map(async t=>[t,await fetchQuote(t)]));
+  const entries=await Promise.all(TICKERS.active.map(async t=>[t,await fetchQuote(t)]));
   prices=Object.fromEntries(entries);
   const live=entries.filter(([,v])=>!v.stale).length;
   setStatus(live>0?"live":"fallback",live);
@@ -395,7 +394,7 @@ async function loadPrices(isAuto=false){
   renderDetail();
   if(!isAuto){
     if(live===0) alert_("כל המניות fallback — בדוק API key","error");
-    else alert_(`✓ ${live}/4 מחירים עודכנו`,"success");
+    else alert_(`✓ ${live}/${TICKERS.active.length} מחירים עודכנו`,"success");
   }
 }
 
@@ -416,10 +415,11 @@ setInterval(()=>{
 function setStatus(s,live=0){
   const dot=document.getElementById("sdot"),txt=document.getElementById("stxt");
   const cd=document.getElementById("scd"),lv=document.getElementById("lval");
+  const total=TICKERS.active.length;
   if(s==="live"){
     dot.style.background="var(--green)";dot.style.animation="pulse 2s infinite";
     txt.style.color="var(--green)";txt.textContent=`● ${new Date().toLocaleTimeString("he-IL")}`;
-    cd.style.display="inline";lv.style.color=live===4?"var(--green)":"var(--amber)";
+    cd.style.display="inline";lv.style.color=live===total?"var(--green)":"var(--amber)";
     document.getElementById("ptitle").textContent="LIVE ●";
   }else if(s==="loading"){
     dot.style.background="var(--amber)";txt.style.color="var(--amber)";txt.textContent="◌";cd.style.display="none";
@@ -427,7 +427,7 @@ function setStatus(s,live=0){
     dot.style.background="var(--red)";txt.style.color="var(--red)";txt.textContent="⚠ fallback";cd.style.display="none";
     document.getElementById("ptitle").textContent="FALLBACK ⚠";
   }
-  lv.textContent=`${live}/4`;
+  lv.textContent=`${live}/${total}`;
 }
 
 // ════════════════════════════════════════
@@ -535,156 +535,23 @@ function rebuildAfterTabSwitch(){
 }
 
 // ════════════════════════════════════════
-// CLAUDE API — 3-attempt CORS bypass
-// ════════════════════════════════════════
-async function callClaude(sys,user){
-  const payload={
-    model:"claude-sonnet-4-20250514",
-    max_tokens:1200,
-    system:sys,
-    messages:[{role:"user",content:user}]
-  };
-
-  const attempts=[
-    // 1. Direct (works from local server / some browsers)
-    async()=>{
-      dlog("→ direct","info");
-      const ctrl=new AbortController();
-      const tid=setTimeout(()=>ctrl.abort(),14000);
-      const r=await fetch("https://api.anthropic.com/v1/messages",{
-        method:"POST",headers:{"Content-Type":"application/json"},
-        signal:ctrl.signal,body:JSON.stringify(payload)
-      });
-      clearTimeout(tid);
-      if(!r.ok)throw new Error(`HTTP ${r.status}`);
-      const d=await r.json();
-      if(d.error)throw new Error(d.error.message);
-      return(d.content||[]).map(c=>c.text||"").join("").trim();
-    },
-    // 2. corsproxy.io
-    async()=>{
-      dlog("→ corsproxy.io","info");
-      const ctrl=new AbortController();
-      const tid=setTimeout(()=>ctrl.abort(),20000);
-      const r=await fetch("https://corsproxy.io/?https://api.anthropic.com/v1/messages",{
-        method:"POST",headers:{"Content-Type":"application/json"},
-        signal:ctrl.signal,body:JSON.stringify(payload)
-      });
-      clearTimeout(tid);
-      if(!r.ok)throw new Error(`HTTP ${r.status}`);
-      const d=await r.json();
-      if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));
-      return(d.content||[]).map(c=>c.text||"").join("").trim();
-    },
-    // 3. thingproxy
-    async()=>{
-      dlog("→ thingproxy","info");
-      const ctrl=new AbortController();
-      const tid=setTimeout(()=>ctrl.abort(),22000);
-      const r=await fetch("https://thingproxy.freeboard.io/fetch/https://api.anthropic.com/v1/messages",{
-        method:"POST",headers:{"Content-Type":"application/json"},
-        signal:ctrl.signal,body:JSON.stringify(payload)
-      });
-      clearTimeout(tid);
-      if(!r.ok)throw new Error(`HTTP ${r.status}`);
-      const d=await r.json();
-      if(d.error)throw new Error(d.error.message||JSON.stringify(d.error));
-      return(d.content||[]).map(c=>c.text||"").join("").trim();
-    },
-  ];
-
-  let last="";
-  for(let i=0;i<attempts.length;i++){
-    try{
-      const res=await attempts[i]();
-      dlog(`✓ Claude API (שיטה ${i+1})`,"ok");
-      return res;
-    }catch(e){
-      last=e.name==="AbortError"?"timeout":e.message;
-      dlog(`✗ שיטה ${i+1}: ${last}`,"warn");
-    }
-  }
-  throw new Error(`כל שיטות ה-API נכשלו — ${last}`);
-}
-
-// ════════════════════════════════════════
 // CLAUDE CAPITAL ANALYSIS
 // ════════════════════════════════════════
+// A public static page (GitHub Pages) can never safely call the Anthropic
+// API directly from the browser: the request needs an x-api-key header,
+// and shipping that key in client-side JS would expose it to anyone who
+// opens dev tools. There's also no server here to proxy the call. So this
+// runs entirely on the deterministic local engine below — no network
+// round-trip, no hidden secret, no misleading "connecting" state.
 async function claudeAnalyze(ticker,pd,portfolioType){
-  const isIron=portfolioType==="IRON";
-
-  const sys=`You are Claude Capital — an autonomous AI investment intelligence with no emotional bias, career risk, or benchmark anchoring.
-You process fundamental value, technical momentum, macro regime, and reflexive dynamics simultaneously — with zero cognitive bias.
-${isIron?"Portfolio type: IRON (long-term compounding). Be patient, structural, anti-fragile.":"Portfolio type: ACTIVE (decisive trading). Use technical + catalyst signals."}
-Respond with ONLY a valid JSON object. Absolutely no markdown, no text outside JSON.`;
-
-  const user=`Stock: ${ticker} | Portfolio: ${portfolioType}
-Live data:
-  Price: $${fmt(pd.price)} | Change: ${(pd.change??0)>=0?"+":""}${fmt(pd.change)} (${fmt(pd.changePct)}%)
-  High: $${fmt(pd.high)} | Low: $${fmt(pd.low)} | PrevClose: $${fmt(pd.prevClose)} | Vol: ${pd.volume}
-  Quality: ${pd.stale?"STALE – market may be closed":"LIVE REAL-TIME"}
-Macro: ${MACRO[ticker]}
-
-Return ONLY this JSON (all fields required, no nulls):
-{
-  "ticker":"${ticker}",
-  "portfolio_type":"${portfolioType}",
-  "decision":"BUY|SELL|HOLD|ACCUMULATE|WAIT",
-  "confidence":<integer 0-100>,
-  "scores":{"fundamental":<1-10>,"technical":<1-10>,"macro":<1-10>},
-  "risk_level":"LOW|MEDIUM|HIGH",
-  "strategy_note":"<2 sharp Hebrew sentences — Claude Capital independent view>",
-  "action_zone":"<price range e.g. $108.50-$111.00>",
-  "stop_logic":"${isIron?"N/A — structural exit only":"<stop price + 1 line reasoning>"}",
-  "claude_quote":"<1 bold Hebrew conviction statement>",
-  "claude_edge":"<1 Hebrew sentence: what Claude sees that human investors miss>",
-  "vs_legends":{
-    "buffett_stance":"BUY|HOLD|AVOID",
-    "buffett_diff":"<Hebrew: where Claude agrees or diverges from Buffett and why>",
-    "soros_stance":"LONG|SHORT|NEUTRAL",
-    "soros_diff":"<Hebrew: where Claude agrees or diverges from Soros and why>",
-    "dalio_stance":"OVERWEIGHT|NEUTRAL|UNDERWEIGHT",
-    "dalio_diff":"<Hebrew: where Claude agrees or diverges from Dalio and why>"
-  }
-}`;
-
-  try{
-    dlog(`→ analyzing ${ticker}`,"info");
-    const raw=await callClaude(sys,user);
-    const m=raw.match(/\{[\s\S]*\}/);
-    if(!m)throw new Error("no JSON in response");
-    let result;
-    try{result=JSON.parse(m[0]);}
-    catch(pe){throw new Error(`JSON parse: ${pe.message}`);}
-    result._engine="claude";
-    dlog(`✓ ${ticker}: ${result.decision} ${result.confidence}%`,"ok");
-    return result;
-  }catch(e){
-    dlog(`✗ ${ticker}: ${e.message}`,"err");
-    alert_(`⚠ ${ticker}: ${e.message.slice(0,50)}`,"error");
-    // show CORS banner
-    showCorsBanner();
-    const fb=localFallback(ticker,pd,portfolioType);
-    fb._failReason=e.message;
-    return fb;
-  }
-}
-
-function showCorsBanner(){
-  const b=document.getElementById("cors-banner");
-  if(b.style.display==="block")return;
-  b.innerHTML=`<div style="font-weight:700;font-size:12px;color:#fbbf24;margin-bottom:6px">⚠ Claude API נחסם ע"י CORS — המנוע המקומי פעיל</div>
-<div style="color:#fcd34d">לניתוח Claude אמיתי, הרץ את הקובץ דרך שרת מקומי:</div>
-<div style="margin-top:5px;display:flex;flex-direction:column;gap:3px;font-family:'JetBrains Mono',monospace;font-size:11px;color:#fbbf24">
-  <span>▸ <strong>python3 -m http.server 8080</strong> → http://localhost:8080</span>
-  <span>▸ <strong>npx serve .</strong> → כנ"ל</span>
-</div>
-<div style="margin-top:7px;font-size:10px;color:rgba(252,211,77,.55)">הניתוח המקומי פעיל ומציג המלצות מבוססות לוגיקה טכנית מתקדמת</div>`;
-  b.style.display="block";
+  dlog(`→ analyzing ${ticker} (local engine)`,"info");
+  const result=localFallback(ticker,pd,portfolioType);
+  dlog(`✓ ${ticker}: ${result.decision} ${result.confidence}%`,"ok");
+  return result;
 }
 
 // ════════════════════════════════════════
-// LOCAL FALLBACK — improved logic
+// LOCAL ANALYSIS ENGINE — deterministic, rule-based
 // ════════════════════════════════════════
 function localFallback(ticker,pd,portfolioType){
   const isIron=portfolioType==="IRON";
@@ -693,7 +560,7 @@ function localFallback(ticker,pd,portfolioType){
   const pos=rng>0?(pd.price-(pd.low??pd.price))/rng:0.5;
   const mom=pct>4?9:pct>2?8:pct>0.8?7:pct>0?6:pct>-1?5:pct>-3?4:3;
   const tec=pos>0.75?8:pos>0.55?7:pos>0.35?6:5;
-  const mac={NVDA:9,GOOG:8,CAMT:7,RKLB:6}[ticker]??6;
+  const mac={NVDA:9,GOOG:8,CAMT:7,RKLB:6,LUNR:5}[ticker]??6;
   const fun=isIron?Math.min(10,Math.round((mac*2+mom)/3)):Math.round((mom+tec)/2);
   const avg=(fun+tec+mac)/3;
   const vol=rng>0&&pd.price>0?rng/pd.price:0.02;
@@ -714,6 +581,7 @@ function localFallback(ticker,pd,portfolioType){
     RKLB:{BUY:"מומנטום חיובי + NSSL catalyst קרוב. כניסה עם סטופ הדוק.",HOLD:"RKLB volatile — שמור עם סטופ מוגדר.",ACCUMULATE:"ירידה מחזקת opportunity. Float קטן = bounce חד.",SELL:"לחץ מקרו + חולשה. יציאה חלקית מהירה.",WAIT:"RKLB לא ברור — אל תיכנס ללא קטליסטור."},
     GOOG:{BUY:"Alphabet חוזר לכוח — Gemini + ענן מניעים. כניסה אסטרטגית.",HOLD:"GOOG יציב — מאקרו AI תומך, מחיר הוגן.",ACCUMULATE:"הזדמנות צבירה לטווח ארוך. Alphabet — נכס ליבה.",SELL:"חולשה — שקול הפחתת חשיפה.",WAIT:"המתן לאות ברור מ-Gemini metrics."},
     CAMT:{BUY:"CHIPS Act ביקוש עולה. כניסה עם סטופ הדוק בגלל volatility.",HOLD:"CAMT — float מוגבל. שמור עם סטופ.",ACCUMULATE:"ירידה = הזדמנות. TSMC capex cycle תומך.",SELL:"ירידה + float קטן = EXIT מהיר.",WAIT:"CAMT — המתן לאות capex ברור."},
+    LUNR:{BUY:"קטליסטור משימת CLPS קרוב + מומנטום. כניסה קטנה, סטופ הדוק מאוד.",HOLD:"LUNR — ממתין למשימה הבאה של NASA. פוזיציה קטנה בלבד.",ACCUMULATE:"ירידה חדה = הזדמנות ספקולטיבית לטווח ארוך על תעשיית הירח.",SELL:"סיכון תפעולי גבוה + חולשה. יציאה מהירה, זו מניה תנודתית מאוד.",WAIT:"LUNR — micro-cap ספקולטיבי, המתן לקטליסטור משימה ברור."},
   };
   const note=(NOTES[ticker]||{})[decision]||"ניתוח מקומי פעיל.";
 
@@ -722,6 +590,7 @@ function localFallback(ticker,pd,portfolioType){
     RKLB:{b:"AVOID",bs:"Buffett לא יבין space micro-cap. Claude רואה ריאל-אופציה שמצדיקה חשיפה קטנה.",s:"LONG",ss:"Soros יחפש momentum catalyst — NSSL. Claude מסכים, אך עם sizing קטן.",d:"NEUTRAL",ds:"Dalio ידרוש מתאם נמוך — RKLB מספק. Claude מוסיף volatility warning."},
     GOOG:{b:"BUY",bs:"Buffett אוהב Alphabet — מוט חיפוש + ענן. Claude מסכים ומוסיף AI edge.",s:"LONG",ss:"Soros רואה momentum בענן AI. Claude מסכים — Gemini = growth catalyst.",d:"OVERWEIGHT",ds:"Dalio יכלול GOOG כ-core equity. Claude מסכים לחלוטין."},
     CAMT:{b:"HOLD",bs:"Buffett ידרוש מרווח ביטחון — float קטן מסוכן. Claude יותר אגרסיבי.",s:"NEUTRAL",ss:"Soros יחפש catalyst cycle — TSMC capex. Claude מסכים, timing uncertain.",d:"NEUTRAL",ds:"Dalio יגביל ל-small allocation. Claude מסכים בגלל volatility."},
+    LUNR:{b:"AVOID",bs:"Buffett לא נוגע בחברות פרה-רווחיות ותנודתיות כאלה. Claude רואה ריאל-אופציה זעירה בלבד.",s:"LONG",ss:"Soros יחפש רפלקסיביות סביב כל הכרזת משימה. Claude מסכים עם sizing זעיר מאוד.",d:"UNDERWEIGHT",ds:"Dalio יגביל לחשיפה שולית בגלל קורלציה נמוכה אך תנודתיות קיצונית."},
   };
   const st=stances[ticker]||{b:"HOLD",bs:"ניתוח מקומי.",s:"NEUTRAL",ss:"ניתוח מקומי.",d:"NEUTRAL",ds:"ניתוח מקומי."};
 
@@ -779,11 +648,7 @@ async function runAnalysis(){
   btn.style.background="linear-gradient(135deg,var(--gold),#8a6420)";
   btn.innerHTML=tab==="iron"?"◆ Claude Capital — סריקת ברזל":"◆ Claude Capital — ניתוח עצמאי";
 
-  // check if all local (CORS failed)
-  const cur=analyses[tab];
-  const allLocal=tickers.every(t=>cur[t]&&cur[t]._engine==="local");
-  if(allLocal) showCorsBanner();
-  else alert_(`✓ ניתוח ${pType} הושלם`,"success");
+  alert_(`✓ ניתוח ${pType} הושלם`,"success");
 }
 
 // ════════════════════════════════════════
@@ -821,9 +686,7 @@ function renderAnalysis(){
     const cc=conf>=80?"#00d4a0":conf>=60?"#f59e0b":"#ff4d6d";
     const sc=res.scores||{},vl=res.vs_legends||{};
     const sc_=s=>["BUY","LONG","OVERWEIGHT"].includes(s)?"var(--green)":["SELL","SHORT","UNDERWEIGHT"].includes(s)?"var(--red)":"var(--amber)";
-    const engBadge=res._engine==="claude"
-      ?`<span style="font-size:9px;padding:1px 7px;border-radius:99px;background:var(--gold-d);color:var(--gold);border:1px solid var(--gold-b)">◆ Claude</span>`
-      :`<span style="font-size:9px;padding:1px 7px;border-radius:99px;background:rgba(59,130,246,.1);color:#82b1ff;border:1px solid rgba(59,130,246,.22)">⌗ local${res._failReason?" (CORS)":""}</span>`;
+    const engBadge=`<span style="font-size:9px;padding:1px 7px;border-radius:99px;background:rgba(59,130,246,.1);color:#82b1ff;border:1px solid rgba(59,130,246,.22)">⌗ local engine</span>`;
 
     card.innerHTML=`
       <div class="dc-top">
@@ -924,7 +787,7 @@ function switchTab(t){
   document.getElementById("t-active").className="tab"+(t==="active"?" act":"");
   document.getElementById("t-iron").className  ="tab"+(t==="iron"  ?" iro":"");
   document.getElementById("iron-banner").style.display=t==="iron"?"flex":"none";
-  document.getElementById("tickerCount").textContent=t==="iron"?"2":"4";
+  document.getElementById("tickerCount").textContent=getTickers().length;
   const btn=document.getElementById("abtn");
   btn.innerHTML=t==="iron"?"◆ Claude Capital — סריקת ברזל":"◆ Claude Capital — ניתוח עצמאי";
   rebuildAfterTabSwitch();
@@ -939,6 +802,7 @@ function toggleKey(){
 }
 function saveKey(){
   finnhubKey=document.getElementById("kinput").value.trim();
+  localStorage.setItem("finnhubKey",finnhubKey);
   document.getElementById("kpanel").style.display="none";
   dlog(`Key: ${finnhubKey.slice(0,8)}...`,"info");
   tilesBuilt=false;
