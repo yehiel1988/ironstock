@@ -815,6 +815,11 @@ function saveKey(){
 dlog("◆ Claude Capital — boot","info");
 renderAnalysis();
 startLiveLoop();
+if(!finnhubKey){
+  dlog("אין מפתח Finnhub שמור — מציג מחירי fallback. לחץ ⚿ כדי להזין מפתח חינמי.","warn");
+  toggleKey();
+  alert_("להצגת מחירים בזמן אמת: לחץ ⚿ והזן מפתח Finnhub חינמי (הרשמה ~15 שניות)","info");
+}
 </script>
 </body>
 </html>
