@@ -173,6 +173,12 @@ main{max-width:1280px;margin:0 auto;padding:22px 24px 88px;position:relative;z-i
 .edetail{display:none;margin-top:9px;flex-direction:column;gap:5px}
 .erow{display:flex;justify-content:space-between;padding:5px 9px;border-radius:7px;font-size:11px;font-family:'JetBrains Mono',monospace}
 
+/* ── News list (full recommendation) ── */
+.nlink{display:block;padding:6px 9px;border-radius:7px;background:rgba(255,255,255,.025);margin-bottom:5px;text-decoration:none;transition:background .2s}
+.nlink:hover{background:rgba(255,255,255,.05)}
+.nhead{font-size:11px;color:var(--text);line-height:1.5}
+.nmeta{font-size:9px;color:var(--muted);margin-top:2px;font-family:'JetBrains Mono',monospace}
+
 /* ── Alerts ── */
 .aw{position:fixed;bottom:58px;left:18px;z-index:200;display:flex;flex-direction:column;gap:5px;width:295px}
 .alert{padding:8px 13px;border-radius:9px;font-size:11px;font-family:'JetBrains Mono',monospace;backdrop-filter:blur(12px);animation:slideLeft .3s ease;box-shadow:0 6px 24px rgba(0,0,0,.5);border:1px solid}
@@ -223,9 +229,8 @@ footer{position:fixed;bottom:0;left:0;right:0;background:rgba(4,8,16,.94);border
 
   <!-- Summary -->
   <div class="sgrid">
-    <div class="scard"><div class="slabel">מזומן פנוי</div><div class="sval" style="color:#a78bfa">₪24,000</div></div>
-    <div class="scard"><div class="slabel">מניות</div><div class="sval" style="color:var(--blue)" id="tickerCount">5</div></div>
-    <div class="scard"><div class="slabel">חי עכשיו</div><div class="sval" id="lval" style="color:var(--amber)">0/5</div></div>
+    <div class="scard"><div class="slabel">מניות</div><div class="sval" style="color:var(--blue)" id="tickerCount">4</div></div>
+    <div class="scard"><div class="slabel">חי עכשיו</div><div class="sval" id="lval" style="color:var(--amber)">0/4</div></div>
     <div class="scard"><div class="slabel">ניתוחים</div><div class="sval" id="acnt" style="color:#f472b6">0</div></div>
   </div>
 
@@ -259,13 +264,23 @@ footer{position:fixed;bottom:0;left:0;right:0;background:rgba(4,8,16,.94);border
   </section>
 
   <!-- Analysis -->
-  <section>
+  <section style="margin-bottom:28px">
     <div class="ahdr">
       <button class="mbtn" id="abtn" onclick="runAnalysis()">◆ Claude Capital — ניתוח עצמאי</button>
       <span class="sectitle">Claude Capital Intelligence ▸</span>
     </div>
     <div class="empty" id="empty"><div style="font-size:22px;opacity:.25;margin-bottom:8px">◆</div>לחץ לניתוח Claude Capital עצמאי</div>
     <div class="agrid" id="agrid" style="display:none"></div>
+  </section>
+
+  <!-- Full Recommendation (Volume + Fundamental + Technical + News + Contracts) -->
+  <section>
+    <div class="ahdr">
+      <button class="mbtn" id="fbtn" onclick="runFullRecommendation()" style="background:linear-gradient(135deg,var(--cyan),#0e7490);box-shadow:0 4px 18px rgba(34,211,238,.28)">📰 המלצת פעולה מלאה — נפח · פונדמנטלי · טכני · חדשות וחוזים</button>
+      <span class="sectitle">Live Volume + News Engine ▸</span>
+    </div>
+    <div class="empty" id="fempty"><div style="font-size:22px;opacity:.25;margin-bottom:8px">📰</div>לחץ להמלצה מלאה — שואב נפח מסחר, חדשות וחוזים אחרונים ב-Live מ-Finnhub</div>
+    <div class="agrid" id="fgrid" style="display:none"></div>
   </section>
 </main>
 <footer>CLAUDE CAPITAL · FOR INFORMATIONAL PURPOSES ONLY · NOT FINANCIAL ADVICE</footer>
@@ -275,27 +290,24 @@ footer{position:fixed;bottom:0;left:0;right:0;background:rgba(4,8,16,.94);border
 // ════════════════════════════════════════
 // CONFIG
 // ════════════════════════════════════════
-const TICKERS={active:["NVDA","RKLB","GOOG","CAMT","LUNR"],iron:["NVDA","GOOG"]};
+const TICKERS={active:["NVDA","GOOG","CAMT","LUNR"],iron:["NVDA","GOOG"]};
 const LIVE_INTERVAL = 15000; // עדכון מחירים כל 15 שניות
 const REFRESH_CD    = 15;
 
 const MACRO={
   NVDA:"Blackwell GPU cycle accelerating. Hyperscaler AI capex all-time highs. Institutional accumulation confirmed. Jensen Huang forward guidance strong.",
-  RKLB:"Neutron development on track. NSSL Phase 3 contract catalyst pending. High risk/reward. Macro pressure on space sector.",
   GOOG:"Gemini 2.0 driving Cloud revenue lift. Search share stabilizing. YouTube advertising recovery strong. TPU reducing NVDA dependency.",
   CAMT:"Semiconductor testing demand rising with CHIPS Act. Tied to TSMC capex cycle. Limited float = high volatility risk & opportunity.",
   LUNR:"Intuitive Machines — NASA CLPS lunar lander contracts. IM-2/IM-3 mission cadence is the key catalyst. Pre-revenue-scale micro-cap, extreme volatility.",
 };
 const FB={
   NVDA:{price:109.02,change:1.23,changePct:1.14,volume:"312M",high:111.5,low:107.8,prevClose:107.79,open:108.1,stale:true},
-  RKLB:{price:22.41,change:-0.31,changePct:-1.37,volume:"18M",high:23.1,low:22.0,prevClose:22.72,open:22.6,stale:true},
   GOOG:{price:163.84,change:0.87,changePct:0.53,volume:"22M",high:165.2,low:162.5,prevClose:162.97,open:163.1,stale:true},
   CAMT:{price:72.15,change:-0.94,changePct:-1.29,volume:"4M",high:73.5,low:71.8,prevClose:73.09,open:73.0,stale:true},
   LUNR:{price:9.75,change:-0.22,changePct:-2.21,volume:"6M",high:10.15,low:9.52,prevClose:9.97,open:9.9,stale:true},
 };
 const TC={
   NVDA:{border:"rgba(118,185,0,.42)",dot:"#76b900",text:"#a3d44a",acc:"rgba(118,185,0,.09)"},
-  RKLB:{border:"rgba(255,82,82,.42)", dot:"#ff5252",text:"#ff8a80",acc:"rgba(255,82,82,.08)"},
   GOOG:{border:"rgba(66,133,244,.42)",dot:"#4285f4",text:"#82b1ff",acc:"rgba(66,133,244,.09)"},
   CAMT:{border:"rgba(255,167,38,.42)",dot:"#ffa726",text:"#ffd54f",acc:"rgba(255,167,38,.08)"},
   LUNR:{border:"rgba(167,139,250,.42)",dot:"#a78bfa",text:"#c4b5fd",acc:"rgba(167,139,250,.08)"},
@@ -320,6 +332,9 @@ let selTicker=null;
 let analyses={active:{},iron:{}};
 let anLoading={};
 let busy=false;
+let fullAnalyses={active:{},iron:{}};
+let fullLoading={};
+let fullBusy=false;
 let cdVal=REFRESH_CD;
 let liveTimer=null;
 let tilesBuilt=false; // flag: tiles already in DOM
@@ -372,6 +387,70 @@ async function fetchQuote(sym){
     dlog(`✗ ${sym}: ${e.name==="AbortError"?"timeout":e.message}`,"err");
     return{...FB[sym],stale:true};
   }
+}
+
+// ════════════════════════════════════════
+// VOLUME + NEWS — live Finnhub data for full recommendation
+// ════════════════════════════════════════
+const POS_WORDS=["beat","beats","surge","record","upgrade","contract","award","awarded","partnership","growth","soar","rally","expand","approval","approved","win","wins","deal","raise","raised","strong","outperform","bullish"];
+const NEG_WORDS=["miss","misses","downgrade","lawsuit","recall","delay","delayed","cut","plunge","drop","probe","investigation","fraud","layoff","layoffs","weak","loss","losses","fall","warns","warning","bearish","default"];
+
+async function fetchVolumeData(sym){
+  try{
+    const to=Math.floor(Date.now()/1000);
+    const from=to-60*60*24*20; // 20 days back — enough for an average
+    const ctrl=new AbortController();
+    const tid=setTimeout(()=>ctrl.abort(),9000);
+    const r=await fetch(`https://finnhub.io/api/v1/stock/candle?symbol=${sym}&resolution=D&from=${from}&to=${to}&token=${finnhubKey}`,{signal:ctrl.signal});
+    clearTimeout(tid);
+    if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    const d=await r.json();
+    if(d.s!=="ok"||!Array.isArray(d.v)||d.v.length<2)throw new Error("no candle data");
+    const vols=d.v,today=vols[vols.length-1],hist=vols.slice(0,-1);
+    const avg=hist.reduce((a,b)=>a+b,0)/hist.length;
+    return{todayVol:today,avgVol:avg,ratio:avg>0?today/avg:1,stale:false};
+  }catch(e){
+    dlog(`✗ volume ${sym}: ${e.name==="AbortError"?"timeout":e.message}`,"err");
+    return{todayVol:null,avgVol:null,ratio:null,stale:true};
+  }
+}
+
+async function fetchNews(sym){
+  try{
+    const to=new Date(),from=new Date(Date.now()-7*24*60*60*1000);
+    const f=d=>d.toISOString().slice(0,10);
+    const ctrl=new AbortController();
+    const tid=setTimeout(()=>ctrl.abort(),9000);
+    const r=await fetch(`https://finnhub.io/api/v1/company-news?symbol=${sym}&from=${f(from)}&to=${f(to)}&token=${finnhubKey}`,{signal:ctrl.signal});
+    clearTimeout(tid);
+    if(!r.ok)throw new Error(`HTTP ${r.status}`);
+    const d=await r.json();
+    if(!Array.isArray(d))throw new Error("bad response");
+    return d.sort((a,b)=>b.datetime-a.datetime).slice(0,5);
+  }catch(e){
+    dlog(`✗ news ${sym}: ${e.name==="AbortError"?"timeout":e.message}`,"err");
+    return[];
+  }
+}
+
+function scoreVolume(ratio){
+  if(ratio==null)return 5;
+  if(ratio>=2)return 9;
+  if(ratio>=1.5)return 8;
+  if(ratio>=1.15)return 7;
+  if(ratio>=0.85)return 6;
+  if(ratio>=0.6)return 4;
+  return 3;
+}
+function scoreNews(items){
+  if(!items.length)return{score:5,pos:0,neg:0};
+  let pos=0,neg=0;
+  items.forEach(n=>{
+    const t=`${n.headline||""} ${n.summary||""}`.toLowerCase();
+    POS_WORDS.forEach(w=>{if(t.includes(w))pos++;});
+    NEG_WORDS.forEach(w=>{if(t.includes(w))neg++;});
+  });
+  return{score:Math.max(1,Math.min(10,5+(pos-neg))),pos,neg};
 }
 
 // ════════════════════════════════════════
@@ -555,7 +634,7 @@ async function claudeAnalyze(ticker,pd,portfolioType){
 // ════════════════════════════════════════
 // Fundamental = business quality/moat, deliberately static — a stock's
 // balance sheet doesn't change because the tape moved 5% today.
-const FUND_QUALITY={NVDA:9,GOOG:9,CAMT:6,RKLB:4,LUNR:3};
+const FUND_QUALITY={NVDA:9,GOOG:9,CAMT:6,LUNR:3};
 
 function localFallback(ticker,pd,portfolioType){
   const isIron=portfolioType==="IRON";
@@ -565,7 +644,7 @@ function localFallback(ticker,pd,portfolioType){
   const mom=pct>4?9:pct>2?8:pct>0.8?7:pct>0?6:pct>-1?5:pct>-3?4:3;
   const posScore=pos>0.75?8:pos>0.55?7:pos>0.35?6:5;
   const tec=Math.round((posScore+mom)/2); // momentum + position-in-range = technical
-  const mac={NVDA:9,GOOG:8,CAMT:7,RKLB:6,LUNR:5}[ticker]??6;
+  const mac={NVDA:9,GOOG:8,CAMT:7,LUNR:5}[ticker]??6;
   const fun=FUND_QUALITY[ticker]??6;
   const avg=(fun+tec+mac)/3;
   const vol=rng>0&&pd.price>0?rng/pd.price:0.02;
@@ -583,7 +662,6 @@ function localFallback(ticker,pd,portfolioType){
 
   const NOTES={
     NVDA:{BUY:"מומנטום AI חזק + מאקרו תומך. כניסה על pullback לתמיכה.",HOLD:"NVDA בטווח — שמור פוזיציה, אל תגדיל עד בירור כיוון.",ACCUMULATE:"ירידה = הזדמנות צבירה ל-Blackwell cycle. כניסה בשלבים.",SELL:"חולשה טכנית חריגה. הפחת חשיפה, סטופ קצר.",WAIT:"אין אות ברור. המתן לקטליסטור ברור."},
-    RKLB:{BUY:"מומנטום חיובי + NSSL catalyst קרוב. כניסה עם סטופ הדוק.",HOLD:"RKLB volatile — שמור עם סטופ מוגדר.",ACCUMULATE:"ירידה מחזקת opportunity. Float קטן = bounce חד.",SELL:"לחץ מקרו + חולשה. יציאה חלקית מהירה.",WAIT:"RKLB לא ברור — אל תיכנס ללא קטליסטור."},
     GOOG:{BUY:"Alphabet חוזר לכוח — Gemini + ענן מניעים. כניסה אסטרטגית.",HOLD:"GOOG יציב — מאקרו AI תומך, מחיר הוגן.",ACCUMULATE:"הזדמנות צבירה לטווח ארוך. Alphabet — נכס ליבה.",SELL:"חולשה — שקול הפחתת חשיפה.",WAIT:"המתן לאות ברור מ-Gemini metrics."},
     CAMT:{BUY:"CHIPS Act ביקוש עולה. כניסה עם סטופ הדוק בגלל volatility.",HOLD:"CAMT — float מוגבל. שמור עם סטופ.",ACCUMULATE:"ירידה = הזדמנות. TSMC capex cycle תומך.",SELL:"ירידה + float קטן = EXIT מהיר.",WAIT:"CAMT — המתן לאות capex ברור."},
     LUNR:{BUY:"קטליסטור משימת CLPS קרוב + מומנטום. כניסה קטנה, סטופ הדוק מאוד.",HOLD:"LUNR — ממתין למשימה הבאה של NASA. פוזיציה קטנה בלבד.",ACCUMULATE:"ירידה חדה = הזדמנות ספקולטיבית לטווח ארוך על תעשיית הירח.",SELL:"סיכון תפעולי גבוה + חולשה. יציאה מהירה, זו מניה תנודתית מאוד.",WAIT:"LUNR — micro-cap ספקולטיבי, המתן לקטליסטור משימה ברור."},
@@ -592,7 +670,6 @@ function localFallback(ticker,pd,portfolioType){
 
   const stances={
     NVDA:{b:"HOLD",bs:"NVDA בחפיר AI — אך Buffett ידרוש מרווח ביטחון גדול יותר. Claude מתאים את החשיפה למומנטום היומי בפועל, לא לסיפור לטווח ארוך בלבד.",s:"LONG",ss:"Soros יכיר ברפלקסיביות — כל GPU נמכר מגדיל ביקוש הבא. Claude מסכים.",d:"OVERWEIGHT",ds:"Dalio יכלול NVDA ב-AI allocation. Claude מוסיף: timing קריטי."},
-    RKLB:{b:"AVOID",bs:"Buffett לא יבין space micro-cap. Claude רואה ריאל-אופציה שמצדיקה חשיפה קטנה.",s:"LONG",ss:"Soros יחפש momentum catalyst — NSSL. Claude מסכים, אך עם sizing קטן.",d:"NEUTRAL",ds:"Dalio ידרוש מתאם נמוך — RKLB מספק. Claude מוסיף volatility warning."},
     GOOG:{b:"BUY",bs:"Buffett אוהב Alphabet — מוט חיפוש + ענן. Claude מסכים ומוסיף AI edge.",s:"LONG",ss:"Soros רואה momentum בענן AI. Claude מסכים — Gemini = growth catalyst.",d:"OVERWEIGHT",ds:"Dalio יכלול GOOG כ-core equity. Claude מסכים לחלוטין."},
     CAMT:{b:"HOLD",bs:"Buffett ידרוש מרווח ביטחון — float קטן מסוכן. Claude יותר אגרסיבי.",s:"NEUTRAL",ss:"Soros יחפש catalyst cycle — TSMC capex. Claude מסכים, timing uncertain.",d:"NEUTRAL",ds:"Dalio יגביל ל-small allocation. Claude מסכים בגלל volatility."},
     LUNR:{b:"AVOID",bs:"Buffett לא נוגע בחברות פרה-רווחיות ותנודתיות כאלה. Claude רואה ריאל-אופציה זעירה בלבד.",s:"LONG",ss:"Soros יחפש רפלקסיביות סביב כל הכרזת משימה. Claude מסכים עם sizing זעיר מאוד.",d:"UNDERWEIGHT",ds:"Dalio יגביל לחשיפה שולית בגלל קורלציה נמוכה אך תנודתיות קיצונית."},
@@ -618,6 +695,176 @@ function localFallback(ticker,pd,portfolioType){
     },
     _engine:"local",
   };
+}
+
+// ════════════════════════════════════════
+// FULL RECOMMENDATION ENGINE — Volume + Fundamental + Technical + live News/Contracts
+// Volume comes from Finnhub daily candles (today vs 20-day average).
+// News/contracts come from Finnhub company-news over the last 7 days,
+// scored with a simple keyword sentiment pass. Both are fetched live on
+// every click, so this is always as current as Finnhub's data.
+// ════════════════════════════════════════
+function buildFullRecommendation(ticker,pd,portfolioType,volData,newsItems){
+  const isIron=portfolioType==="IRON";
+  const pct=pd.changePct??0;
+  const rng=(pd.high??pd.price)-(pd.low??pd.price);
+  const pos=rng>0?(pd.price-(pd.low??pd.price))/rng:0.5;
+  const mom=pct>4?9:pct>2?8:pct>0.8?7:pct>0?6:pct>-1?5:pct>-3?4:3;
+  const posScore=pos>0.75?8:pos>0.55?7:pos>0.35?6:5;
+  const tec=Math.round((posScore+mom)/2);
+  const mac={NVDA:9,GOOG:8,CAMT:7,LUNR:5}[ticker]??6;
+  const fun=FUND_QUALITY[ticker]??6;
+  const vol=scoreVolume(volData?.ratio);
+  const nw=scoreNews(newsItems);
+  const avg=(fun+tec+mac+vol+nw.score)/5;
+  const rngPct=rng>0&&pd.price>0?rng/pd.price:0.02;
+  const risk=rngPct>0.042?"HIGH":rngPct>0.022?"MEDIUM":"LOW";
+
+  let decision;
+  if(isIron){
+    decision=pct<-7?"ACCUMULATE":pct<-3?"ACCUMULATE":avg>=7.5?"HOLD":avg>=6?"HOLD":"WAIT";
+  }else{
+    decision=avg>=8&&vol>=7?"BUY":pct>2.5&&avg>=7?"BUY":pct<-3&&nw.score<5?"SELL":pct<-1.5&&tec<5?"SELL":avg>=6.5?"HOLD":"WAIT";
+  }
+
+  const dataGaps=(volData?.stale?1:0)+(newsItems.length?0:1);
+  const conf=Math.min(88,Math.max(40,Math.round(avg*9+(pd.stale?-9:2)-dataGaps*6)));
+  const lo=(pd.price*0.984).toFixed(2),hi=(pd.price*1.014).toFixed(2);
+
+  const volTxt=volData?.ratio!=null
+    ?`נפח מסחר היום ${(volData.ratio*100).toFixed(0)}% מהממוצע ב-20 הימים האחרונים`
+    :"נתוני נפח מסחר לא זמינים כרגע";
+  const newsTxt=newsItems.length
+    ?`${newsItems.length} כתבות/חוזים ב-7 הימים האחרונים — ${nw.pos} אותות חיוביים / ${nw.neg} שליליים`
+    :"אין חדשות או חוזים רלוונטיים שנמצאו ב-7 הימים האחרונים";
+
+  return{
+    ticker,portfolio_type:portfolioType,decision,confidence:conf,
+    scores:{fundamental:fun,technical:tec,macro:mac,volume:vol,news:nw.score},
+    risk_level:risk,
+    strategy_note:`${volTxt}. ${newsTxt}.`,
+    action_zone:`$${lo}–$${hi}`,
+    stop_logic:isIron?"N/A":`$${(pd.price*0.935).toFixed(2)} — סטופ טכני`,
+    news:newsItems.slice(0,3),
+    asOf:new Date().toLocaleTimeString("he-IL"),
+    _engine:"full-live",
+  };
+}
+
+async function runFullRecommendation(){
+  if(fullBusy)return;
+  fullBusy=true;
+  const pType=tab==="iron"?"IRON":"ACTIVE";
+  const tickers=getTickers();
+  const btn=document.getElementById("fbtn");
+  const origHtml=btn.innerHTML;
+  btn.disabled=true;
+  btn.innerHTML=`<span class="spinner"></span> אוסף Volume + חדשות...`;
+  tickers.forEach(t=>{fullLoading[t]=true;});
+  renderFullAnalysis();
+
+  for(const t of tickers){
+    alert_(`📰 אוסף נתוני נפח וחדשות עבור ${t}…`,"info");
+    try{
+      const [volData,newsItems]=await Promise.all([fetchVolumeData(t),fetchNews(t)]);
+      const result=buildFullRecommendation(t,prices[t]||FB[t],pType,volData,newsItems);
+      fullAnalyses[tab][t]=result;
+      if(result.decision==="BUY"||result.decision==="ACCUMULATE")
+        alert_(`📰 ${result.decision} ${t} — ${result.confidence}% (Volume+News)`,result.decision==="BUY"?"buy":"iron");
+    }catch(e){
+      dlog(`✗ full ${t}: ${e.message}`,"err");
+    }
+    delete fullLoading[t];
+    renderFullAnalysis();
+  }
+
+  fullBusy=false;
+  btn.disabled=false;
+  btn.innerHTML=origHtml;
+  alert_(`✓ המלצה מלאה עודכנה — ${new Date().toLocaleTimeString("he-IL")}`,"success");
+}
+
+function renderFullAnalysis(){
+  const an=fullAnalyses[tab],tickers=getTickers();
+  const hasAny=tickers.some(t=>an[t]||fullLoading[t]);
+  document.getElementById("fempty").style.display=hasAny?"none":"block";
+  document.getElementById("fgrid").style.display=hasAny?"grid":"none";
+  if(!hasAny)return;
+  const grid=document.getElementById("fgrid");
+  grid.innerHTML="";
+
+  tickers.forEach(t=>{
+    const res=an[t],pd=prices[t]||FB[t],loading=fullLoading[t],tc=TC[t]||{};
+    const card=document.createElement("div");
+    card.className="dcard";card.style.borderColor=tc.border||"var(--border)";
+
+    if(loading){
+      card.innerHTML=`
+        <div class="sk" style="height:19px;width:44%;margin-bottom:13px"></div>
+        <div class="sk" style="height:12px;width:82%;margin-bottom:7px"></div>
+        <div class="sk" style="height:12px;width:58%;margin-bottom:15px"></div>
+        <div class="sk" style="height:88px;border-radius:11px;margin-bottom:9px"></div>
+        <div class="sk" style="height:58px;border-radius:11px"></div>`;
+      grid.appendChild(card);return;
+    }
+    if(!res){card.innerHTML=`<div style="color:var(--dim);text-align:center;padding:28px">—</div>`;grid.appendChild(card);return;}
+
+    const dm=DM[res.decision]||{},rm=RM[res.risk_level]||{};
+    const conf=res.confidence,r=21,circ=2*Math.PI*r;
+    const cc=conf>=80?"#00d4a0":conf>=60?"#f59e0b":"#ff4d6d";
+    const sc=res.scores||{};
+
+    card.innerHTML=`
+      <div class="dc-top">
+        <div class="dc-tg">
+          <div style="width:8px;height:8px;border-radius:50%;background:${tc.dot||"var(--muted)"};animation:pulse 2s infinite;flex-shrink:0"></div>
+          <span class="dc-ticker" style="color:${tc.text||"var(--text)"}">${res.ticker}</span>
+          <span style="font-size:9px;padding:1px 7px;border-radius:99px;background:rgba(34,211,238,.1);color:var(--cyan);border:1px solid rgba(34,211,238,.28)">📰 עדכני ${res.asOf}</span>
+        </div>
+        <span class="dc-dec" style="background:${dm.bg};color:${dm.c};border:1px solid ${dm.b}">${dm.l||res.decision}</span>
+      </div>
+
+      <div style="display:flex;gap:13px;align-items:center;margin-bottom:13px">
+        <div class="conf-wrap">
+          <svg viewBox="0 0 52 52" style="width:100%;height:100%;transform:rotate(-90deg)">
+            <circle cx="26" cy="26" r="${r}" fill="none" stroke="var(--dim)" stroke-width="4"/>
+            <circle cx="26" cy="26" r="${r}" fill="none" stroke="${cc}" stroke-width="4"
+              stroke-dasharray="${(conf/100)*circ} ${circ}" stroke-linecap="round" style="transition:stroke-dasharray 1.4s ease"/>
+          </svg>
+          <span class="conf-pct" style="color:${cc}">${conf}%</span>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:5px">
+          ${[["Fundamental",sc.fundamental??5],["Technical",sc.technical??5],["Macro",sc.macro??5],["Volume",sc.volume??5],["News",sc.news??5]].map(([l,v])=>{
+            const c=v>=8?"#00d4a0":v>=6?"#f59e0b":"#ff4d6d";
+            return`<div class="srow"><span style="width:72px;color:var(--muted);text-align:right;flex-shrink:0;font-size:10px">${l}</span><div class="strack"><div class="sfill" style="width:${(v/10)*100}%;background:linear-gradient(90deg,${c}55,${c})"></div></div><span class="snm" style="color:${c}">${v}</span></div>`;
+          }).join("")}
+        </div>
+      </div>
+
+      <div style="display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap;align-items:center">
+        ${pd?`<span style="padding:2px 9px;border-radius:99px;font-size:11px;background:var(--surface);color:var(--text);font-weight:700;font-family:'JetBrains Mono',monospace">$${fmt(pd.price)}</span>`:""}
+        <span style="padding:2px 9px;border-radius:99px;font-size:10px;color:${rm.c};border:1px solid ${rm.c}30;background:${rm.c}10;font-family:'JetBrains Mono',monospace">${rm.l}</span>
+      </div>
+
+      <div class="snote" style="border-right-color:${dm.c||"var(--dim)"}">${res.strategy_note}</div>
+
+      <div style="margin-bottom:10px">
+        <div style="font-size:9px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-bottom:7px">חדשות וחוזים אחרונים (7 ימים, Live)</div>
+        ${res.news&&res.news.length?res.news.map(n=>`
+          <a class="nlink" href="${n.url}" target="_blank" rel="noopener">
+            <div class="nhead">${n.headline}</div>
+            <div class="nmeta">${n.source||""} · ${n.datetime?new Date(n.datetime*1000).toLocaleDateString("he-IL"):""}</div>
+          </a>`).join(""):`<div style="font-size:11px;color:var(--dim)">אין כתבות רלוונטיות</div>`}
+      </div>
+
+      <button class="ebtn" onclick="toggleEntry(this)">▼ פרטי כניסה</button>
+      <div class="edetail">
+        <div class="erow" style="background:rgba(0,212,160,.07)"><span style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.06em">Entry Zone</span><span style="color:var(--green);font-weight:700">${res.action_zone}</span></div>
+        <div class="erow" style="background:rgba(245,158,11,.07)"><span style="color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.06em">Stop Logic</span><span style="color:var(--amber);font-weight:700">${res.stop_logic}</span></div>
+      </div>
+    `;
+    grid.appendChild(card);
+  });
 }
 
 // ════════════════════════════════════════
@@ -805,6 +1052,7 @@ function switchTab(t){
   rebuildAfterTabSwitch();
   renderDetail();
   renderAnalysis();
+  renderFullAnalysis();
 }
 
 function toggleKey(){
@@ -826,6 +1074,7 @@ function saveKey(){
 // ════════════════════════════════════════
 dlog("◆ Claude Capital — boot","info");
 renderAnalysis();
+renderFullAnalysis();
 startLiveLoop();
 if(!finnhubKey){
   dlog("אין מפתח Finnhub שמור — מציג מחירי fallback. לחץ ⚿ כדי להזין מפתח חינמי.","warn");
